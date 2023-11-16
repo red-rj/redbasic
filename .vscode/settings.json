@@ -1,0 +1,5 @@
+{
+    "python.analysis.typeCheckingMode": "off",
+    "python.analysis.completeFunctionParens": false,
+    "cmake.configureOnOpen": false
+}

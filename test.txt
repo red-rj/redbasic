@@ -1,0 +1,27 @@
+420 + 60 + 9
+29 * 3 / (1+9-9/3)
+
+
+var = 42
+y = x = 42
+z = 28 + 2
+var = y + x
+
+let pedro = 30, lila = 23
+let velho = pedro + z;
+let foo = bar = 15;
+
+if pedro  velho = 1
+
+
+if (lila <= pedro - 1) {
+    if x {
+        var
+    }
+}
+
+{
+    "my ass";
+    69;
+    420;
+}
