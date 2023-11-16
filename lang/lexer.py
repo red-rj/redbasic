@@ -38,6 +38,7 @@ class Token(Enum):
     # equality
     eq = auto()
     neq = auto()
+    equality_op = auto()
 
     # assignment
     #eq
@@ -63,6 +64,8 @@ class Token(Enum):
     kw_list = auto()
     kw_run = auto()
     kw_rem = auto()
+    kw_true = auto()
+    kw_false = auto()
 
     eol = auto()
     eof = auto()
@@ -128,8 +131,8 @@ basic_spec = {
     # rxc(r'<'): Token.lt,rxc(r'<='): Token.lte,rxc(r'>'): Token.gt,rxc(r'>='): Token.gte,
 
     # equality
-    #eq
-    rxc(r'<>|><'): Token.neq,
+    rxc(r'=|<>|><'): Token.equality_op,
+    # rxc(r'<>|><'): Token.neq,
 
     # temp para fazer o curso
     rxc(r'\{'): Token.block_begin,

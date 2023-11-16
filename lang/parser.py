@@ -257,7 +257,7 @@ class Parser:
         return IfStmt(test, consequent, alternate)
 
     """
-    prescidence:
+    precedence:
     - assignment
     - relational
     - additive
@@ -332,6 +332,20 @@ class Parser:
     """
     def relational_expr(self):
         return self._binary_expr(self.additive_expr, Token.relational_op)    
+    
+
+    """
+    EQUALITY_OP: =, <>, ><
+        x = y
+        x <> y; x >< y
+
+    equality_expr
+        : relational_expr
+        | equality_expr EQUALITY_OP relational_expr
+        ;
+    """
+    def equality_expr(self):
+        return self._binary_expr(self.relational_expr, Token.equality_op)
     
 
     """
