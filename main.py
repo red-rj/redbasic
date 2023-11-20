@@ -25,6 +25,9 @@ def main():
     src = """
 10 print "hello"
 goto 10
+let x = 1
+20 y = 2
+rem run
 """
     p = Parser()
     ast = p.parse(src)

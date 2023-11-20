@@ -94,8 +94,6 @@ basic_spec = {
     rxc(r"^\bCLEAR\b", re.IGNORECASE): Token.kw_clear,
     rxc(r"^\bLIST\b", re.IGNORECASE): Token.kw_list,
     rxc(r"^\bRUN\b", re.IGNORECASE): Token.kw_run,
-    rxc(r"^\bREM\b", re.IGNORECASE): Token.kw_rem,
-
     rxc(r"^REM .*", re.IGNORECASE): Token.comment,
 
     # identifiers
@@ -111,8 +109,8 @@ basic_spec = {
     rxc(r';'): Token.semicolon,
 
     # assignment
+    # rxc(''): Token.eq
     rxc(r'[+\-*/]='): Token.eq_complex,
-    # eq
 
     # relational
     rxc(r'[><]=?'): Token.relational_op,
@@ -162,7 +160,7 @@ class Tokenizer:
             token_value = matched.group(0)
             self.cursor += len(token_value)
 
-            if not token:
+            if not token or token == Token.comment:
                 return self.next_token()
 
             return TokenNode(token, token_value)

@@ -78,10 +78,19 @@ class Parser:
             case 'let':
                 return self.let_stmt()
             case 'eol':
-                self.eat()
+                self.skip('eol')
                 return self.statement()
-            case _:
+            case 'identifier':
                 return self.variable_declaration()
+            case _:
+                #return self.expression_stmt()
+                raise SyntaxError("unexpected statement")
+            
+    
+    def expression_stmt(self):
+        e = self.expression()
+        self.eat('eol')
+        return ExpressionStmt(e)
 
     def print_stmt(self):
         self.eat(Token.kw_print)
@@ -119,13 +128,12 @@ class Parser:
         
     def let_stmt(self):
         self.eat('let')
-        d = self.variable_declaration()
-        return LetStmt(d)
+        return self.variable_declaration()
 
     def variable_declaration(self):
         iden = self.identifier()
         # variable_init
-        self.eat('eq')
+        self.eat('=')
         init = self.assignment_expr()
         return VariableDecl(iden, init)
 
@@ -196,6 +204,13 @@ class Parser:
     def primary_expr(self):
         if is_literal(self.lookahead.token):
             return self.literal()
+        
+        match self.lookahead.token:
+            case '(':
+                return self.paren_expr()
+            case Token.identifier:
+                return self.identifier()
+
 
         
 

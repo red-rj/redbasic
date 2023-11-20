@@ -120,3 +120,8 @@ class VariableDecl(Stmt):
 class LetStmt(Stmt):
     declaration:VariableDecl
 
+@dataclass
+class ExpressionStmt(Stmt):
+    expression:Expr
+
+    
