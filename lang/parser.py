@@ -73,14 +73,19 @@ class Parser:
                 return self.print_stmt()
             case 'input':
                 return self.input_stmt()
+            case 'goto':
+                return self.goto_stmt()
             case 'let':
                 return self.let_stmt()
             case 'eol':
                 self.eat()
                 return self.statement()
+            case _:
+                return self.variable_declaration()
 
     def print_stmt(self):
         self.eat(Token.kw_print)
+
         # print list
         plist = []
         while self.lookahead.token != 'eol':
@@ -91,9 +96,38 @@ class Parser:
             
             plist.append(PrintItem(expr, sep))
 
+        self.eat('eol')
         return PrintStmt(plist)
 
+    def input_stmt(self):
+        self.eat('input')
+        varlist = self.var_list()
+        return InputStmt(varlist)
 
+    def var_list(self):
+        variables = [ self.identifier() ]
+        while self.lookahead.token == ',':
+            self.eat()
+            variables.append(self.identifier())
+        
+        return variables
+    
+    def goto_stmt(self):
+        self.eat('goto')
+        dest = self.expression()
+        return GotoStmt(dest)
+        
+    def let_stmt(self):
+        self.eat('let')
+        d = self.variable_declaration()
+        return LetStmt(d)
+
+    def variable_declaration(self):
+        iden = self.identifier()
+        # variable_init
+        self.eat('eq')
+        init = self.assignment_expr()
+        return VariableDecl(iden, init)
 
 
     # EXPRESSIONS
@@ -171,6 +205,9 @@ class Parser:
         self.eat(')')
         return expr
     
+    def identifier(self):
+        _, name = self.eat(Token.identifier)
+        return Identifier(name)
 
     # LITERALS
 

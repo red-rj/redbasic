@@ -102,3 +102,21 @@ class PrintItem:
 @dataclass
 class PrintStmt(Stmt):
     printlist:list[PrintItem]
+
+@dataclass
+class InputStmt(Stmt):
+    varlist:list[Identifier]
+
+@dataclass
+class GotoStmt(Stmt):
+    destination:Expr
+
+@dataclass
+class VariableDecl(Stmt):
+    iden:Identifier
+    init:Expr
+
+@dataclass
+class LetStmt(Stmt):
+    declaration:VariableDecl
+

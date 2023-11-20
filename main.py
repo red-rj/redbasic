@@ -24,6 +24,7 @@ def main():
     # src = getprogram()
     src = """
 10 print "hello"
+goto 10
 """
     p = Parser()
     ast = p.parse(src)
