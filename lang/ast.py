@@ -68,6 +68,11 @@ class Line(Stmt):
     linenum:int = 0
 
 @dataclass
+class Label:
+    name:str
+
+
+@dataclass
 class Program(Stmt):
     "top level program"
     body:list[Line]

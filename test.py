@@ -28,7 +28,7 @@ class mathTests(parserTestCase):
         
     def test_nested_add_subtract(tc):
         tc.assertAst(
-            "3 + 2 - 2",
+            "0  3 + 2 - 2",
             Program([Line(ExpressionStmt(
                     BinaryExpr('-', 
                                BinaryExpr('+', IntLiteral(3), IntLiteral(2)), 
@@ -40,7 +40,7 @@ class mathTests(parserTestCase):
     
     def test_multiplication(tc):
         tc.assertAst(
-            "2 * 2",
+            "0  2 * 2",
             Program(body=[Line(statement=ExpressionStmt(expression=BinaryExpr(operator='*',
                                                                   left=IntLiteral(value=2),
                                                                   right=IntLiteral(value=2))),
@@ -49,7 +49,7 @@ class mathTests(parserTestCase):
 
     def test_multiplication_nested(tc):
         tc.assertAst(
-            '2 * 2 * 2',
+            '0  2 * 2 * 2',
             Program(body=[Line(statement=ExpressionStmt(expression=BinaryExpr(operator='*',
                                                                   left=BinaryExpr(operator='*',
                                                                                   left=IntLiteral(value=2),
@@ -59,7 +59,7 @@ class mathTests(parserTestCase):
         )
 
         tc.assertAst(
-            '29 * 3 / (1+9-9/3)',
+            '0  29 * 3 / (1+9-9/3)',
             Program(body=[Line(statement=
                                ExpressionStmt(expression=
                                               BinaryExpr(operator='/',
@@ -79,7 +79,7 @@ class mathTests(parserTestCase):
     
     def test_operator_precedence(tc):
         tc.assertAst(
-            '2 + 2 * 2',
+            '0  2 + 2 * 2',
             Program(body=[Line(statement=ExpressionStmt(expression=BinaryExpr(operator='+',
                                                                   left=IntLiteral(value=2),
                                                                   right=BinaryExpr(operator='*',
@@ -89,7 +89,7 @@ class mathTests(parserTestCase):
         )
 
         tc.assertAst(
-            ' (2 + 2) * 2',
+            '0  (2 + 2) * 2',
             Program(body=[Line(statement=ExpressionStmt(expression=
                                             BinaryExpr(operator='*',
                                                         left=BinaryExpr(operator='+',
@@ -180,17 +180,40 @@ class statmentTests(parserTestCase):
                    linenum=20)])       
         )
 
-    @unittest.expectedFailure
     def test_if_else_stmt(tc):
         tc.assertAst(
             """
             30 if i == 10 then a = 13.37 else a += 1
             """,
-            
+            Program(body=[Line(statement=IfStmt(test=BinaryExpr(operator='==',
+                                                    left=Identifier(name='i'),
+                                                    right=IntLiteral(value=10)),
+                                    consequent=ExpressionStmt(expression=AssignmentExpr(operator='=',
+                                                                                        left=Identifier(name='a'),
+                                                                                        right=FloatLiteral(value=13.37))),
+                                    alternate=ExpressionStmt(expression=AssignmentExpr(operator='+=',
+                                                                                       left=Identifier(name='a'),
+                                                                                       right=IntLiteral(value=1)))),
+                   linenum=30)])
         )
     
+class labelTests(parserTestCase):
+    def test_label(tc):
+        tc.assertAst(
+            """
+            name:
+            let i = 1
+            """,
+            Program(body=[Label(name='name'), Line(statement=VariableDecl(iden=Identifier(name='i'), init=IntLiteral(value=1)), linenum=0)])
+        )
+        tc.assertAst(
+            """
+            name: let i = 1
+            """,
+            Program(body=[Label(name='name'), Line(statement=VariableDecl(iden=Identifier(name='i'), init=IntLiteral(value=1)), linenum=0)])
+        )
     
-# --- exec ---
 
+# --- exec ---
 if __name__=='__main__':
     unittest.main()

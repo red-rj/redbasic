@@ -42,7 +42,7 @@ class Parser:
 
         return self.program()
 
-    
+
     def program(self):
         return Program(self.line_list())
     
@@ -51,23 +51,19 @@ class Parser:
 
         self.skip('eol')
         while self.lookahead:
-            linenum = self.line_number()
-            s = self.statement()
-            lines.append(Line(s, linenum))
+            if self.lookahead.token == Token.named_label:
+                lines.append(self.label())
+            else:
+                linenum = self.line_number()
+                s = self.statement()
+                lines.append(Line(s, linenum))
             self.skip('eol')
 
         return lines
     
     def line_number(self):
         try:
-            n = self.undoable(self.integer).value
-
-            # don't use as line number if it's part of an expression
-            if self.lookahead.token in (Token.additive_op, Token.relational_op, Token.multiplicative_op):
-                self.undo()
-                return 0
-                
-            return n
+            return self.integer().value
         except SyntaxError:
             return 0
         
@@ -191,6 +187,10 @@ class Parser:
             mode = self.identifier().name
 
         return ListStmt(args, mode)
+    
+    def label(self):
+        _, name = self.eat(Token.named_label)
+        return Label(name[:-1])
 
     # EXPRESSIONS
 
@@ -272,7 +272,7 @@ class Parser:
     def identifier(self):
         _, name = self.eat(Token.identifier)
         return Identifier(name)
-
+    
     # LITERALS
 
     def integer(self):
@@ -342,17 +342,4 @@ class Parser:
     def skip(self, tok:Token):
         while self.lookahead.token == tok:
             self.eat()
-
-    def undo(self):
-        assert self.prevnode, "prevnode null! undoable() not called?"
-
-        self.tokenizer.unget()
-        self.lookahead = self.prevnode
-        self.prevnode = None
-
-    def undoable(self, builder_f):
-        self.prevnode = self.lookahead
-        ast = builder_f()
-        return ast
-
 
