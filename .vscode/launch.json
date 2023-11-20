@@ -20,6 +20,15 @@
             "args": ["test.txt"],
             "console": "integratedTerminal",
             "justMyCode": true
+        },
+        {
+            "name": "redbasic test",
+            "type": "python",
+            "request": "launch",
+            "program": "test.py",
+            "args": [],
+            "console": "integratedTerminal",
+            "justMyCode": true
         }
     ]
 }

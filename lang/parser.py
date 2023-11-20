@@ -61,7 +61,14 @@ class Parser:
     
     def line_number(self):
         try:
-            return self.integer().value
+            n = self.undoable(self.integer).value
+
+            # don't use as line number if it's part of an expression
+            if self.lookahead.token in (Token.additive_op, Token.relational_op, Token.multiplicative_op):
+                self.undo()
+                return 0
+                
+            return n
         except SyntaxError:
             return 0
         
@@ -83,13 +90,13 @@ class Parser:
             case 'identifier':
                 return self.variable_declaration()
             case _:
-                #return self.expression_stmt()
-                raise SyntaxError("unexpected statement")
+                return self.expression_stmt()
+                #raise SyntaxError("unexpected statement")
             
     
     def expression_stmt(self):
         e = self.expression()
-        self.eat('eol')
+        self.skip('eol')
         return ExpressionStmt(e)
 
     def print_stmt(self):
@@ -293,3 +300,17 @@ class Parser:
     def skip(self, tok:Token):
         while self.lookahead.token == tok:
             self.eat()
+
+    def undo(self):
+        assert self.prevnode, "prevnode null! undoable() not called?"
+
+        self.tokenizer.unget()
+        self.lookahead = self.prevnode
+        self.prevnode = None
+
+    def undoable(self, builder_f):
+        self.prevnode = self.lookahead
+        ast = builder_f()
+        return ast
+
+

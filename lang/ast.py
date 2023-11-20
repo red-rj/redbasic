@@ -65,7 +65,7 @@ class Line(Stmt):
     Ex: '10 print "Hello World!"' OR 'goto 10'
     """
     statement:Stmt
-    linenum:int
+    linenum:int = 0
 
 @dataclass
 class Program(Stmt):

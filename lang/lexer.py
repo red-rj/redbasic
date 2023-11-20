@@ -138,7 +138,7 @@ class Tokenizer:
 
     def reset(self, string:str = None):
         self.string = string
-        self.cursor = 0
+        self.cursor = self.prev_cursor = 0
 
     def has_more_tokens(self):
         return self.cursor < len(self.string)
@@ -158,6 +158,7 @@ class Tokenizer:
                 continue
             
             token_value = matched.group(0)
+            self.prev_cursor = self.cursor
             self.cursor += len(token_value)
 
             if not token or token == Token.comment:
@@ -166,6 +167,9 @@ class Tokenizer:
             return TokenNode(token, token_value)
         
         raise SyntaxError(f"Unexpected token: '{code[0]}'")
+    
+    def unget(self):
+        self.cursor = self.prev_cursor
     
 
     def __iter__(self):
