@@ -21,12 +21,11 @@ class Token(StrEnum):
     relational_op = auto()
 
     # equality
-    #eq
-    neq = auto()
+    equality_op = auto()
 
     # assignment
-    #eq
-    eq_complex = auto()
+    assignment = auto()
+    assignment_complex = auto()
 
     # logical operators
     logical_not = auto()
@@ -55,7 +54,6 @@ class Token(StrEnum):
     kw_true = 'true'
     kw_false = 'false'
     #   symbols
-    eq = '='
     l_paren = '('
     r_paren = ')'
     comma = ','
@@ -66,19 +64,36 @@ class Token(StrEnum):
 # lang spec definition
 rxc = re.compile
 basic_spec = {
-    rxc(r"\r\n|\n"): Token.eol,
+    rxc(r"^(\r\n|\n)"): Token.eol,
+    # ignorables
     rxc(r'^\s+'): None,
+    rxc(r"^REM\s.*", re.IGNORECASE): None,
     
     # Numbers
     #   floating point w/ scientific exponents
-    rxc(r"(\d+\.\d*)([Ee][-+]?\d+)?"): Token.floatingpoint,
+    rxc(r"^(\d+\.\d*)([Ee][-+]?\d+)?"): Token.floatingpoint,
     #   integers, in HEX, OCTAL and DECIMAL respectivly. TODO: support oldschool $90 hex
-    rxc(r"(0[xX][a-fA-F\d]+)|(0[0-7]+)|(\d+)"): Token.integer,
-    rxc(r'"[^"]*"'): Token.string_literal,
+    rxc(r"^((0[xX][a-fA-F\d]+)|(0[0-7]+)|(\d+))"): Token.integer,
+    rxc(r'^"[^"]*"'): Token.string_literal,
+
+    # assignment
+    rxc(r'^[+\-*/]='): Token.assignment_complex,
+    rxc(r'^='): Token.assignment,
+    
+    # equality
+    rxc(r'^(==|<>|><)'): Token.equality_op,
+
+    # relational
+    rxc(r'^[><]=?'): Token.relational_op,
 
     # math operations
-    rxc(r"[+\-]"): Token.additive_op,
-    rxc(r"[*/]"): Token.multiplicative_op,
+    rxc(r"^[+\-]"): Token.additive_op,
+    rxc(r"^[*/]"): Token.multiplicative_op,
+
+    rxc(r"^\("): Token.l_paren,
+    rxc(r"^\)"): Token.r_paren,
+    rxc(r'^,'): Token.comma,
+    rxc(r'^;'): Token.semicolon,
 
     # keywords
     rxc(r"^\b(PRINT|PR)\b", re.IGNORECASE): Token.kw_print,
@@ -94,30 +109,12 @@ basic_spec = {
     rxc(r"^\bCLEAR\b", re.IGNORECASE): Token.kw_clear,
     rxc(r"^\bLIST\b", re.IGNORECASE): Token.kw_list,
     rxc(r"^\bRUN\b", re.IGNORECASE): Token.kw_run,
-    rxc(r"^REM .*", re.IGNORECASE): Token.comment,
 
     # identifiers
     #   named labels
     rxc(r"^[a-zA-Z_]\w*:"): Token.named_label,
     #   variables
-    rxc(r"[a-zA-Z_]\w*"): Token.identifier,
-
-    rxc(r"\("): Token.l_paren,
-    rxc(r"\)"): Token.r_paren,
-    
-    rxc(r','): Token.comma,
-    rxc(r';'): Token.semicolon,
-
-    # assignment
-    # rxc(''): Token.eq
-    rxc(r'[+\-*/]='): Token.eq_complex,
-
-    # relational
-    rxc(r'[><]=?'): Token.relational_op,
-
-    # equality
-    rxc(r'='): Token.eq,
-    rxc(r'<>|><'): Token.neq,
+    rxc(r"^[a-zA-Z_]\w*"): Token.identifier
 }
 
 
@@ -161,7 +158,7 @@ class Tokenizer:
             self.prev_cursor = self.cursor
             self.cursor += len(token_value)
 
-            if not token or token == Token.comment:
+            if not token:
                 return self.next_token()
 
             return TokenNode(token, token_value)

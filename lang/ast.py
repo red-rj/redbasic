@@ -111,6 +111,9 @@ class InputStmt(Stmt):
 class GotoStmt(Stmt):
     destination:Expr
 
+class GosubStmt(GotoStmt):
+    pass
+
 @dataclass
 class VariableDecl(Stmt):
     iden:Identifier
@@ -118,10 +121,35 @@ class VariableDecl(Stmt):
 
 @dataclass
 class LetStmt(Stmt):
-    declaration:VariableDecl
+    declarations:list[VariableDecl]
 
 @dataclass
 class ExpressionStmt(Stmt):
     expression:Expr
 
-    
+@dataclass
+class IfStmt(Stmt):
+    test:Expr
+    consequent:Stmt
+    alternate:Stmt
+
+@dataclass
+class CommandStmt(Stmt):
+    name:str
+
+class ClearStmt(CommandStmt):
+    def __init__(self):
+        self.name = __class__.__name__
+
+class ReturnStmt(CommandStmt):
+    def __init__(self):
+        self.name = __class__.__name__
+
+@dataclass
+class RunStmt(Stmt):
+    arguments:list[Expr]
+
+@dataclass
+class ListStmt(Stmt):
+    arguments:list[Expr]
+    mode:str = 'code'

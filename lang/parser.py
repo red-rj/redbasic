@@ -1,11 +1,10 @@
 from .lexer import Token, Tokenizer
 from .ast import *
-from types import SimpleNamespace as AstNode
 
 
 def parse_int(string:str):
     "Helper to handle C style octals"
-    if string[0] == '0' and len(string) > 1 and 'x' not in string and 'X' not in string:
+    if string[0] == '0' and len(string) > 1 and string[1] not in 'xX':
         # octal
         o = string[1:]
         return int(o, 8)
@@ -23,7 +22,7 @@ def is_literal(tok:Token):
 
 
 def is_assignment_op(tok:Token):
-    return tok == Token.eq or tok == Token.eq_complex
+    return tok == Token.assignment or tok == Token.assignment_complex
 
 def is_print_sep(tok:Token):
     return tok == Token.comma or tok == Token.semicolon
@@ -76,22 +75,31 @@ class Parser:
 
     def statement(self):
         match self.lookahead.token:
+            case 'eol':
+                self.skip('eol')
+                return self.statement()
             case 'print':
                 return self.print_stmt()
             case 'input':
                 return self.input_stmt()
             case 'goto':
                 return self.goto_stmt()
+            case 'gosub':
+                return self.gosub_stmt()
             case 'let':
                 return self.let_stmt()
-            case 'eol':
-                self.skip('eol')
-                return self.statement()
-            case 'identifier':
-                return self.variable_declaration()
+            case 'if':
+                return self.if_stmt()
+            case 'clear':
+                return self.clear_stmt()
+            case 'run':
+                return self.run_stmt()
+            case 'list':
+                return self.list_stmt()
+            # case 'identifier':
+            #     return self.variable_decl()
             case _:
                 return self.expression_stmt()
-                #raise SyntaxError("unexpected statement")
             
     
     def expression_stmt(self):
@@ -132,23 +140,68 @@ class Parser:
         self.eat('goto')
         dest = self.expression()
         return GotoStmt(dest)
+    
+    def gosub_stmt(self):
+        self.eat('gosub')
+        dest = self.expression()
+        return GosubStmt(dest)
         
     def let_stmt(self):
         self.eat('let')
-        return self.variable_declaration()
-
-    def variable_declaration(self):
+        return self.variable_decl()
+    
+    def variable_decl(self):
         iden = self.identifier()
         # variable_init
-        self.eat('=')
+        self.eat(Token.assignment)
         init = self.assignment_expr()
         return VariableDecl(iden, init)
 
+    def if_stmt(self):
+        self.eat('if')
+        test = self.expression()
+        
+        if self.lookahead.token == 'then':
+            self.eat()
+
+        consequent = self.statement()
+
+        if self.lookahead.token == 'else':
+            self.eat()
+            alt = self.statement()
+        else:
+            alt = None
+
+        return IfStmt(test, consequent, alt)
+
+    def clear_stmt(self):
+        self.eat('clear')
+        return ClearStmt()
+    
+    def run_stmt(self):
+        self.eat('run')
+        args = self.expression()
+        return RunStmt(args)
+
+    def list_stmt(self):
+        self.eat('list')
+
+        args = self.expression()
+        mode = 'code'
+
+        if self.lookahead.token == Token.identifier:
+            mode = self.identifier().name
+
+        return ListStmt(args, mode)
 
     # EXPRESSIONS
 
-    def expression(self):
-        return self.sequence_expr()
+    def expression(self) -> Expr | list[Expr]:
+        seq = self.sequence_expr()
+        if len(seq) > 1:
+            return seq
+        else:
+            return seq[0]
     
     def sequence_expr(self):
         exprs = [ self.assignment_expr() ]
@@ -156,10 +209,7 @@ class Parser:
             self.eat()
             exprs.append(self.assignment_expr())
         
-        if len(exprs) > 1:
-            return exprs
-        
-        return exprs[0]
+        return exprs
     
     def assignment_expr(self):
         left = self.logical_or_expr()
@@ -167,27 +217,20 @@ class Parser:
             return left
         
         # assignment_op
-        op = self.eat_first_of('=', 'eq_complex').value
+        op = self.eat_first_of(Token.assignment, Token.assignment_complex).value
         return AssignmentExpr(operator=op, left=check_assignmet_target(left), right=self.assignment_expr())
 
     def logical_or_expr(self) -> LogicalExpr:
-        return self._mk_expr(self.logical_and_expr, 'logical_or', LogicalExpr)
+        return self._mk_expr(self.logical_and_expr, Token.logical_or, LogicalExpr)
     
     def logical_and_expr(self) -> LogicalExpr:
-        return self._mk_expr(self.equality_expr, 'logical_and', LogicalExpr)
+        return self._mk_expr(self.equality_expr, Token.logical_and, LogicalExpr)
     
     def equality_expr(self) -> BinaryExpr:
-        left = self.relational_expr()
-
-        while self.lookahead.token in ('=', 'neq'):
-            op = self.eat().value
-            right = self.relational_expr()
-            left = BinaryExpr(op, left, right)
-
-        return left
+        return self._mk_expr(self.relational_expr, Token.equality_op, BinaryExpr)
     
     def relational_expr(self) -> BinaryExpr:
-        return self._mk_expr(self.additive_expr, 'relational_op', BinaryExpr)
+        return self._mk_expr(self.additive_expr, Token.relational_op, BinaryExpr)
     
     def additive_expr(self) -> BinaryExpr:
         return self._mk_expr(self.multiplicative_expr, Token.additive_op, BinaryExpr)
@@ -198,9 +241,8 @@ class Parser:
     def unary_expr(self):
         op = None
 
-        match self.lookahead.token:
-            case Token.additive_op | Token.logical_not:
-                op = self.eat().value
+        if self.lookahead.token in (Token.additive_op, Token.logical_not):
+            op = self.eat().value
 
         if op:
             # allow chaining
@@ -218,8 +260,6 @@ class Parser:
             case Token.identifier:
                 return self.identifier()
 
-
-        
 
     def paren_expr(self):
         self.eat('(')

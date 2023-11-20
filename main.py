@@ -22,16 +22,40 @@ def getprogram()->str:
 
 def main():
     # src = getprogram()
-    src = """
-10 print "hello"
-goto 10
-let x = 1
-20 y = 2
-rem run
+    test_codes = [
+"2 * 2",
+"2 * 2 * 2",
+'29 * 3 / (1+9-9/3)',
+'2 + 2 * 2',
+'(2 + 2) * 2',
+'var = 42',
+'var = x',
+'y = x = 42',
+'let x = 420',
+'let pedro = 30, lila = 23',
 """
+10 if i < 10 then a = 10
+""",
+"""
+20 if i == 10 a = 13.37
+""",
+"""
+30 if i == 10 then a = 13.37 else a += 1
+""",
+"a += 1"
+    ]
+
     p = Parser()
-    ast = p.parse(src)
-    pprint(ast)
+
+    for code in test_codes:
+        try:
+            print(code, end=' :: ')
+            ast = p.parse(code)
+            pprint(ast)
+        except Exception as e:
+            print(e)
+
+        print('-'*25)
     
 
 
