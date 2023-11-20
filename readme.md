@@ -3,7 +3,7 @@
 
 This is a implementation of TinyBasic in python.
 
-## Expr precendence (low to high)
+## Expression precendence (low to high)
 - sequence
 - assignment
 - logical or

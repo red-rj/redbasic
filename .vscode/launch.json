@@ -16,7 +16,7 @@
             "name": "redbasic",
             "type": "python",
             "request": "launch",
-            "program": "${workspaceFolder}/main.py",
+            "program": "main.py",
             "args": ["test.txt"],
             "console": "integratedTerminal",
             "justMyCode": true

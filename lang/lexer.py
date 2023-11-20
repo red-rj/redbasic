@@ -81,7 +81,7 @@ basic_spec = {
     rxc(r"[*/]"): Token.multiplicative_op,
 
     # keywords
-    rxc(r"^\bPRINT\b", re.IGNORECASE): Token.kw_print,
+    rxc(r"^\b(PRINT|PR)\b", re.IGNORECASE): Token.kw_print,
     rxc(r"^\bIF\b", re.IGNORECASE): Token.kw_if,
     rxc(r"^\bTHEN\b", re.IGNORECASE): Token.kw_then,
     rxc(r"^\bELSE\b", re.IGNORECASE): Token.kw_else,
@@ -112,6 +112,7 @@ basic_spec = {
 
     # assignment
     rxc(r'[+\-*/]='): Token.eq_complex,
+    # eq
 
     # relational
     rxc(r'[><]=?'): Token.relational_op,
@@ -161,7 +162,7 @@ class Tokenizer:
             token_value = matched.group(0)
             self.cursor += len(token_value)
 
-            if token == Token.ignore or token == Token.comment:
+            if not token:
                 return self.next_token()
 
             return TokenNode(token, token_value)

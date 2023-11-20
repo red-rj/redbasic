@@ -27,6 +27,12 @@ class BinaryExpr(Expr):
     left:Expr
     right:Expr
 
+class LogicalExpr(BinaryExpr):
+    pass
+
+class AssignmentExpr(BinaryExpr):
+    pass
+
 @dataclass
 class Identifier(Expr):
     name:str
@@ -44,21 +50,22 @@ class StringLiteral(Expr):
     value:str
 
 @dataclass
-class AssignmentExpr(Expr):
-    operator:str
-    left:Expr
-    right:Expr
+class SequenceExpr(Expr):
+    expressions:list[Expr]
 
+@dataclass
+class UnaryExpr(Expr):
+    operator:str
+    argument:Expr
 
 # --- statements ---
-
 @dataclass
 class Line(Stmt):
     """ A line of BASIC code.
     Ex: '10 print "Hello World!"' OR 'goto 10'
     """
     statement:Stmt
-    linenum:int = 0
+    linenum:int
 
 @dataclass
 class Program(Stmt):
@@ -81,9 +88,17 @@ class EmptyStmt(Stmt):
 class BlockStmt(Stmt):
     body:list[Stmt]
 
-
 @dataclass
 class IfStmt(Stmt):
     test:Expr
     consequent:Stmt
     alternate:Stmt
+
+@dataclass
+class PrintItem:
+    expression:Expr
+    sep:str
+
+@dataclass
+class PrintStmt(Stmt):
+    printlist:list[PrintItem]

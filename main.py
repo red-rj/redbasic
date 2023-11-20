@@ -21,7 +21,10 @@ def getprogram()->str:
 
 
 def main():
-    src = getprogram()
+    # src = getprogram()
+    src = """
+10 print "hello"
+"""
     p = Parser()
     ast = p.parse(src)
     pprint(ast)
