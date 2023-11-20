@@ -76,12 +76,12 @@ basic_spec = {
     rxc(r"^((0[xX][a-fA-F\d]+)|(0[0-7]+)|(\d+))"): Token.integer,
     rxc(r'^"[^"]*"'): Token.string_literal,
 
+    # equality
+    rxc(r'^(==|<>|><)'): Token.equality_op,
+
     # assignment
     rxc(r'^[+\-*/]='): Token.assignment_complex,
     rxc(r'^='): Token.assignment,
-    
-    # equality
-    rxc(r'^(==|<>|><)'): Token.equality_op,
 
     # relational
     rxc(r'^[><]=?'): Token.relational_op,

@@ -162,6 +162,9 @@ class statmentTests(parserTestCase):
             linenum=10)
             ])        
         )
+        
+    def test_if_stmt_short(tc):
+        "If statement w/o 'then'"
 
         tc.assertAst(
         """

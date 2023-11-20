@@ -96,8 +96,6 @@ class Parser:
                 return self.run_stmt()
             case 'list':
                 return self.list_stmt()
-            # case 'identifier':
-            #     return self.variable_decl()
             case _:
                 return self.expression_stmt()
             
@@ -259,6 +257,10 @@ class Parser:
                 return self.paren_expr()
             case Token.identifier:
                 return self.identifier()
+            case 'eof':
+                return None
+            case _:
+                raise ValueError(f"unexpected primary_expr {self.lookahead}")
 
 
     def paren_expr(self):
