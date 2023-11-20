@@ -109,9 +109,13 @@ This is a implementation of TinyBasic in python.
     list_stmt
         : 'LIST'
         | 'LIST' exprlist
-        | 'LIST' 'ast' exprlist
+        | 'LIST' exprlist list_mode
         ;
 
+    list_mode
+        : 'code'
+        | 'ast'
+        ;
     
     varlist 
         : var
@@ -166,7 +170,7 @@ This is a implementation of TinyBasic in python.
     relop 
         : '<'
         | '>'
-        | '='
+        | '=='
         | '<='
         | '>='
         | '<>'

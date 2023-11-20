@@ -13,20 +13,29 @@
             "justMyCode": true
         },
         {
-            "name": "redbasic",
+            "name": "redbasic main",
             "type": "python",
             "request": "launch",
             "program": "main.py",
-            "args": ["test.txt"],
+            "args": [],
             "console": "integratedTerminal",
             "justMyCode": true
         },
         {
-            "name": "redbasic test",
+            "name": "redbasic all tests",
             "type": "python",
             "request": "launch",
             "program": "test.py",
             "args": [],
+            "console": "integratedTerminal",
+            "justMyCode": true
+        },
+        {
+            "name": "redbasic test specific",
+            "type": "python",
+            "request": "launch",
+            "program": "test.py",
+            "args": ["statmentTests.test_let_multiple"],
             "console": "integratedTerminal",
             "justMyCode": true
         }
