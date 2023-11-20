@@ -1,13 +1,11 @@
 import re
-from enum import Enum, auto
+from enum import Enum, StrEnum, auto
 from typing import NamedTuple
 
 
-class Token(Enum):
-    ignore = auto(0)
-
+class Token(StrEnum):
     # literals
-    string_lit = auto()
+    string_literal = auto()
     integer = auto()
     floatingpoint = auto()
 
@@ -15,63 +13,53 @@ class Token(Enum):
     identifier = auto()
     named_label = auto()
 
-    asterisk = auto()
-    slash = auto()
-    l_paren = auto()
-    r_paren = auto()
-    comma = auto()
-    semicolon = auto()
-    block_begin = auto()
-    block_end = auto()
-
     # arithimatic operators
     additive_op = auto()
     multiplicative_op = auto()
 
     # relational operators
     relational_op = auto()
-    # gt = auto()
-    # gte = auto()
-    # lt = auto()
-    # lte = auto()
 
     # equality
-    eq = auto()
+    #eq
     neq = auto()
-    equality_op = auto()
 
     # assignment
     #eq
     eq_complex = auto()
 
-    # boolean operators
-    bool_not = auto()
-    bool_and = auto()
-    bool_or = auto()
-
-    # keywords
-    kw_print = auto()
-    kw_input = auto()
-    kw_let = auto()
-    kw_goto = auto()
-    kw_gosub = auto()
-    kw_return = auto()
-    kw_if = auto()
-    kw_then = auto()
-    kw_else = auto()
-    kw_end = auto()
-    kw_clear = auto()
-    kw_list = auto()
-    kw_run = auto()
-    kw_rem = auto()
-    kw_true = auto()
-    kw_false = auto()
+    # logical operators
+    logical_not = auto()
+    logical_and = auto()
+    logical_or = auto()
 
     eol = auto()
     eof = auto()
 
-    # aliases
-    assignment = eq
+    # manual values
+    #   keywords
+    kw_print = 'print'
+    kw_input = 'input'
+    kw_let = 'let'
+    kw_goto = 'goto'
+    kw_gosub = 'gosub'
+    kw_return = 'return'
+    kw_if = 'if'
+    kw_then = 'then'
+    kw_else = 'else'
+    kw_end = 'end'
+    kw_clear = 'clear'
+    kw_list = 'list'
+    kw_run = 'run'
+    kw_rem = 'rem'
+    kw_true = 'true'
+    kw_false = 'false'
+    #   symbols
+    eq = '='
+    l_paren = '('
+    r_paren = ')'
+    comma = ','
+    semicolon = ';'
 
 
 
@@ -79,14 +67,14 @@ class Token(Enum):
 rxc = re.compile
 basic_spec = {
     rxc(r"\r\n|\n"): Token.eol,
-    rxc(r'^\s+'): Token.ignore,
+    rxc(r'^\s+'): None,
     
     # Numbers
-    # floating point w/ scientific exponents
+    #   floating point w/ scientific exponents
     rxc(r"(\d+\.\d*)([Ee][-+]?\d+)?"): Token.floatingpoint,
-    # integers, in HEX, OCTAL and DECIMAL respectivly. TODO: support oldschool $90 hex
+    #   integers, in HEX, OCTAL and DECIMAL respectivly. TODO: support oldschool $90 hex
     rxc(r"(0[xX][a-fA-F\d]+)|(0[0-7]+)|(\d+)"): Token.integer,
-    rxc(r'"[^"]*"'): Token.string_lit,
+    rxc(r'"[^"]*"'): Token.string_literal,
 
     # math operations
     rxc(r"[+\-]"): Token.additive_op,
@@ -124,20 +112,15 @@ basic_spec = {
 
     # assignment
     rxc(r'[+\-*/]='): Token.eq_complex,
-    rxc(r'='): Token.eq,
 
     # relational
     rxc(r'[><]=?'): Token.relational_op,
-    # rxc(r'<'): Token.lt,rxc(r'<='): Token.lte,rxc(r'>'): Token.gt,rxc(r'>='): Token.gte,
 
     # equality
-    rxc(r'=|<>|><'): Token.equality_op,
-    # rxc(r'<>|><'): Token.neq,
-
-    # temp para fazer o curso
-    rxc(r'\{'): Token.block_begin,
-    rxc(r'\}'): Token.block_end,
+    rxc(r'='): Token.eq,
+    rxc(r'<>|><'): Token.neq,
 }
+
 
 class TokenNode(NamedTuple):
     token:Token = Token.eof

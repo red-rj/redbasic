@@ -1,5 +1,6 @@
 # redbasic AST
-from dataclasses import dataclass, field
+from dataclasses import dataclass
+import typing
 
 # TODO: add precise location to AST nodes
 @dataclass
