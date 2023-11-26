@@ -23,11 +23,15 @@ This is a implementation of TinyBasic in python.
 
     line_list
         : line line_list
+        | label line_list
         ;
 
     line
-        : integer statement EOL
-        | statement EOL
+        : integer? statement EOL
+        ;
+
+    label
+        : identifier ':'
         ;
 
     statement 
@@ -62,8 +66,8 @@ This is a implementation of TinyBasic in python.
         ;
 
     printitem 
-        : expression
-        | "characterstring"
+        : single_expression
+        | string_literal
         ;
 
     input_stmt
@@ -71,8 +75,8 @@ This is a implementation of TinyBasic in python.
         ;
 
     let_stmt
-        : 'LET' var = expression
-        | var = expression
+        : 'LET' identifier = expression
+        | identifier = expression
         ;
 
     goto_stmt
@@ -88,10 +92,8 @@ This is a implementation of TinyBasic in python.
         ;
 
     if_stmt
-        : 'IF' expression relop expression 'THEN' statement
-        | 'IF' expression relop expression statement
-        | 'IF' expression relop expression 'THEN' statement 'else' statement
-        | 'IF' expression relop expression statement 'else' statement
+        : 'IF' expression relop expression 'THEN'? statement
+        | 'IF' expression relop expression 'THEN'? statement 'else' statement
         ;
 
     comment
@@ -104,7 +106,7 @@ This is a implementation of TinyBasic in python.
 
     run_stmt
         : 'RUN'
-        | 'RUN' exprlist
+        | 'RUN' ',' exprlist
         ;
     
     list_stmt
@@ -123,8 +125,8 @@ This is a implementation of TinyBasic in python.
         ;
     
     varlist 
-        : var
-        | var ',' varlist
+        : identifier
+        | identifier ',' varlist
         ;
 
     exprlist 
@@ -133,28 +135,64 @@ This is a implementation of TinyBasic in python.
         ;
 
     expression 
-        : unsignedexpr
-        | '+' unsignedexpr
-        | '-' unsignedexpr
+        : assignment_expr
+        | assignment_expr ',' expression
         ;
 
-    unsignedexpr 
-        : term
-        | term '+' unsignedexpr
-        | term '-' unsignedexpr
+    assignment_expr
+        : logical_or_expr
+        | lhs assignment_op assignment_expr
         ;
 
-    term 
-        : factor
-        | factor '*' term
-        | factor '/' term
+    single_expression
+        : assignment_expr
         ;
 
-    factor 
-        : var
-        | number
-        | '(' expression ')'
+    logical_or_expr
+        : logical_and_expr
+        | logical_and_expr logical_or_op logical_or_expr
+        ;
+
+    logical_and_expr
+        : equality_expr
+        | equality_expr logical_and_op logical_and_expr
+        ;
+
+    equality_expr
+        : relational_expr
+        | relational_expr equality_op equality_expr
+        ;
+
+    relational_expr
+        : additive_expr
+        | additive_expr relational_op relational_expr
+        ;
+
+    additive_expr
+        : multiplicative_expr
+        | multiplicative_expr additive_op additive_expr
+        ;
+
+    multiplicative_expr
+        : unary_expr
+        | unary_expr multiplicative_op multiplicative_expr
+        ;
+
+    unary_expr
+        : primary_expr
+        | additive_op unary_expr
+        | logical_not_op unary_expr
+        ;
+
+    primary_expr
+        : literal
+        | paren_expr
+        | identifier
         | function
+        ;
+
+    lhs
+        : identifier
         ;
 
     function 
@@ -162,9 +200,12 @@ This is a implementation of TinyBasic in python.
         | 'USR' '(' exprlist ')'
         ;
 
-    
+    number
+        : integer
+        | float
+        ;
 
-    var
+    identifier
         : [a-zA-Z_]\w*
         ;
     
@@ -172,12 +213,50 @@ This is a implementation of TinyBasic in python.
         : \d+
         ;
 
-    relop 
+    float
+        : (\d+\.\d*)([Ee][-+]?\d+)?
+        ;
+
+    relational_op 
         : '<'
         | '>'
-        | '=='
         | '<='
         | '>='
+        ;
+
+    equality_op
+        : '=='
         | '<>'
         | '><'
         ;
+
+    assignment_op
+        : '='
+        | '+='
+        | '-='
+        | '*='
+        | '/='
+        ;
+
+    additive_op
+        : '+'
+        | '-'
+        ;
+
+    multiplicative_op
+        : '*'
+        | '/'
+        ;
+
+    logical_or_op
+        : '||'
+        ;
+    
+    logical_and_op
+        : '&&'
+        ;
+    
+    logical_not_op
+        : '!'
+        ;
+    
