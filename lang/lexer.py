@@ -124,7 +124,7 @@ basic_spec = {
     rxc(r"^[a-zA-Z_]\w*"): Token.identifier
 }
 
-assert all( (p.pattern.startswith('^') for p in basic_spec) ), "Spec ill-formed!"
+assert all(p.pattern.startswith('^') for p in basic_spec), "Spec ill-formed!"
 
 class TokenNode(NamedTuple):
     token:Token = Token.eof

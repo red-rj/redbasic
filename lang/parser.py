@@ -94,6 +94,8 @@ class Parser:
                 return self.list_stmt()
             case 'end':
                 return self.end_stmt()
+            case 'return':
+                return self.return_stmt()
             case _:
                 return self.expression_stmt()
             
@@ -109,7 +111,8 @@ class Parser:
         # print list
         plist = []
         while self.lookahead.token != 'eol':
-            expr = self.expression()
+            # expr = self.expression()
+            expr = self.single_expression()
             sep = None
             if self.lookahead.token in (',', ';', ':'):
                 sep = self.eat().value
@@ -176,7 +179,12 @@ class Parser:
     
     def run_stmt(self):
         self.eat('run')
-        args = self.expression()
+        args = []
+        try:
+            self.eat(',')
+            args = self.expression()
+        except Exception:
+            pass
         return RunStmt(args)
 
     def list_stmt(self):
@@ -205,6 +213,10 @@ class Parser:
     def end_stmt(self):
         self.eat('end')
         return EndStmt()
+    
+    def return_stmt(self):
+        self.eat('return')
+        return ReturnStmt()
 
     # EXPRESSIONS
 
@@ -231,6 +243,9 @@ class Parser:
         # assignment_op
         op = self.eat_first_of(Token.assignment, Token.assignment_complex).value
         return AssignmentExpr(operator=op, left=check_assignmet_target(left), right=self.assignment_expr())
+    
+    # consume only one expression, w/o consuming ','
+    single_expression = assignment_expr
 
     def logical_or_expr(self) -> LogicalExpr:
         return self._mk_expr(self.logical_and_expr, Token.logical_or, LogicalExpr)
