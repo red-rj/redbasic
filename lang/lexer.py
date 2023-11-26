@@ -53,6 +53,9 @@ class Token(StrEnum):
     kw_rem = 'rem'
     kw_true = 'true'
     kw_false = 'false'
+    # builtin funcs
+    f_rnd = 'rnd'
+    f_usr = 'usr'
     #   symbols
     l_paren = '('
     r_paren = ')'
@@ -64,10 +67,10 @@ class Token(StrEnum):
 # lang spec definition
 rxc = re.compile
 basic_spec = {
-    rxc(r"^(\r\n|\n)"): Token.eol,
     # ignorables
+    rxc(r"^(\r\n|\n)"): Token.eol,
     rxc(r'^\s+'): None,
-    rxc(r"^REM\s.*", re.IGNORECASE): None,
+    rxc(r"^.*\bREM\b.*", re.IGNORECASE): None,
     
     # Numbers
     #   floating point w/ scientific exponents
@@ -110,6 +113,10 @@ basic_spec = {
     rxc(r"^\bLIST\b", re.IGNORECASE): Token.kw_list,
     rxc(r"^\bRUN\b", re.IGNORECASE): Token.kw_run,
 
+    # builtin functions
+    rxc(r"^RND", re.IGNORECASE): Token.f_rnd,
+    rxc(r"^USR", re.IGNORECASE): Token.f_usr,
+
     # identifiers
     #   named labels
     rxc(r"^[a-zA-Z_]\w*:"): Token.named_label,
@@ -117,6 +124,7 @@ basic_spec = {
     rxc(r"^[a-zA-Z_]\w*"): Token.identifier
 }
 
+assert all( (p.pattern.startswith('^') for p in basic_spec) ), "Spec ill-formed!"
 
 class TokenNode(NamedTuple):
     token:Token = Token.eof
@@ -135,7 +143,7 @@ class Tokenizer:
 
     def reset(self, string:str = None):
         self.string = string
-        self.cursor = self.prev_cursor = 0
+        self.cursor = 0
 
     def has_more_tokens(self):
         return self.cursor < len(self.string)
@@ -155,7 +163,6 @@ class Tokenizer:
                 continue
             
             token_value = matched.group(0)
-            self.prev_cursor = self.cursor
             self.cursor += len(token_value)
 
             if not token:
@@ -164,9 +171,6 @@ class Tokenizer:
             return TokenNode(token, token_value)
         
         raise SyntaxError(f"Unexpected token: '{code[0]}'")
-    
-    def unget(self):
-        self.cursor = self.prev_cursor
     
 
     def __iter__(self):

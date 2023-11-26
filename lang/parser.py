@@ -4,7 +4,7 @@ from .ast import *
 
 def parse_int(string:str):
     "Helper to handle C style octals"
-    if string[0] == '0' and len(string) > 1 and string[1] not in 'xX':
+    if len(string) > 1 and string[0] == '0' and string[1] not in 'xX':
         # octal
         o = string[1:]
         return int(o, 8)
@@ -92,6 +92,8 @@ class Parser:
                 return self.run_stmt()
             case 'list':
                 return self.list_stmt()
+            case 'end':
+                return self.end_stmt()
             case _:
                 return self.expression_stmt()
             
@@ -191,6 +193,18 @@ class Parser:
     def label(self):
         _, name = self.eat(Token.named_label)
         return Label(name[:-1])
+    
+    def builtin_func(self, func):
+        name = self.eat(func).value
+        self.eat('(')
+        args = self.sequence_expr()
+        self.eat(')')
+
+        return Func(name, args)
+    
+    def end_stmt(self):
+        self.eat('end')
+        return EndStmt()
 
     # EXPRESSIONS
 
@@ -259,6 +273,8 @@ class Parser:
                 return self.identifier()
             case 'eof':
                 return None
+            case 'rnd' | 'usr':
+                return self.builtin_func(self.lookahead.token)
             case _:
                 raise ValueError(f"unexpected primary_expr {self.lookahead}")
 

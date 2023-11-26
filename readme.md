@@ -42,6 +42,7 @@ This is a implementation of TinyBasic in python.
         | clear_stmt
         | run_stmt
         | list_stmt
+        | end_stmt
         ;
 
     print_stmt
@@ -115,6 +116,10 @@ This is a implementation of TinyBasic in python.
     list_mode
         : 'code'
         | 'ast'
+        ;
+
+    end_stmt
+        : 'end'
         ;
     
     varlist 

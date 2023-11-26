@@ -17,7 +17,7 @@
             "type": "python",
             "request": "launch",
             "program": "main.py",
-            "args": [],
+            "args": ["-f", "Samples\\exemplo.bas"],
             "console": "integratedTerminal",
             "justMyCode": true
         },

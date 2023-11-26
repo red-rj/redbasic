@@ -18,6 +18,17 @@ class Expr(Stmt):
     "base expression type"
     pass
 
+class EmptyNode:
+    "for stateless nodes"
+    __instance = None
+
+    def __new__(cls):
+        if not cls.__instance:
+            cls.__instance = super().__new__(cls)
+        return cls.__instance
+    
+    def __repr__(self):
+        return f"{self.__class__.__name__}()"
 
 # --- expressions ---
 
@@ -138,17 +149,17 @@ class IfStmt(Stmt):
     consequent:Stmt
     alternate:Stmt
 
-@dataclass
-class CommandStmt(Stmt):
-    name:str
+class SimpleStmt(EmptyNode, Stmt):
+    pass
 
-class ClearStmt(CommandStmt):
-    def __init__(self):
-        self.name = __class__.__name__
+class ClearStmt(SimpleStmt):
+    pass
 
-class ReturnStmt(CommandStmt):
-    def __init__(self):
-        self.name = __class__.__name__
+class ReturnStmt(SimpleStmt):
+    pass
+
+class EndStmt(SimpleStmt):
+    pass
 
 @dataclass
 class RunStmt(Stmt):
@@ -158,3 +169,8 @@ class RunStmt(Stmt):
 class ListStmt(Stmt):
     arguments:list[Expr]
     mode:str = 'code'
+
+@dataclass
+class Func:
+    name:str
+    arguments:list[Expr]
