@@ -98,6 +98,10 @@ basic_spec = {
     rxc(r'^,'): Token.comma,
     rxc(r'^;'): Token.semicolon,
 
+    rxc(r'!'): Token.logical_not,
+    rxc(r'&&'): Token.logical_and,
+    rxc(r'[|]{2}'): Token.logical_or,
+
     # keywords
     rxc(r"^\b(PRINT|PR)\b", re.IGNORECASE): Token.kw_print,
     rxc(r"^\bIF\b", re.IGNORECASE): Token.kw_if,

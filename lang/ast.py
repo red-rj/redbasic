@@ -69,6 +69,11 @@ class UnaryExpr(Expr):
     operator:str
     argument:Expr
 
+@dataclass
+class Func(Expr):
+    name:str
+    arguments:list[Expr]
+
 # --- statements ---
 @dataclass
 class Line(Stmt):
@@ -170,7 +175,3 @@ class ListStmt(Stmt):
     arguments:list[Expr]
     mode:str = 'code'
 
-@dataclass
-class Func:
-    name:str
-    arguments:list[Expr]
