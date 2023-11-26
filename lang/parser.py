@@ -179,7 +179,7 @@ class Parser:
     
     def run_stmt(self):
         self.eat('run')
-        args = []
+        args = None
         try:
             self.eat(',')
             args = self.expression()
