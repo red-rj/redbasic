@@ -1,4 +1,3 @@
-from typing import Any
 import unittest
 from lang.parser import Parser, parse_int
 from lang.ast import *

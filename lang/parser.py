@@ -320,11 +320,11 @@ class Parser:
     
     def literal(self):
         match self.lookahead.token:
-            case 'integer':
+            case Token.integer:
                 return self.integer()
-            case 'floatingpoint':
+            case Token.floatingpoint:
                 return  self.floatingpoint()
-            case 'string_literal':
+            case Token.string_literal:
                 return self.string_literal()
 
     # ---

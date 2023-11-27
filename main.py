@@ -1,5 +1,4 @@
 import sys
-import locale
 import argparse
 from lang.parser import Parser
 from pprint import pprint
