@@ -98,6 +98,34 @@ class mathTests(parserTestCase):
                                                         right=IntLiteral(value=2))),
                    linenum=0)])
         )
+
+    def test_variable(tc):
+        tc.assertAst(
+            "(A+B)/(C+D)",
+            Program(body=[Line(statement=ExpressionStmt(expression=BinaryExpr(operator='/',
+                                                                  left=BinaryExpr(operator='+',
+                                                                                  left=Identifier(name='A'),
+                                                                                  right=Identifier(name='B')),
+                                                                  right=BinaryExpr(operator='+',
+                                                                                   left=Identifier(name='C'),
+                                                                                   right=Identifier(name='D')))),
+                   linenum=0)])
+        )
+
+        tc.assertAst(
+            "B-14*C",
+            Program(body=[Line(statement=ExpressionStmt(expression=BinaryExpr(operator='-',
+                                                                  left=Identifier(name='B'),
+                                                                  right=BinaryExpr(operator='*',
+                                                                                   left=IntLiteral(value=14),
+                                                                                   right=Identifier(name='C')))),
+                   linenum=0)])
+        )
+
+    def test_nested_params(tc):
+        tc.assertAst("((((42))))", Program([ Line(ExpressionStmt(IntLiteral(42))) ]))
+        tc.assertAst("(((((Q)))))", Program([ Line(ExpressionStmt(Identifier('Q'))) ]))
+
         
 class assignmentTests(parserTestCase):
     def test_simple_assignment(tc):
@@ -125,7 +153,93 @@ class assignmentTests(parserTestCase):
         )
 
 
+class unaryTests(parserTestCase):
+    def test_unary_minus(tc):
+        tc.assertAst("-x",
+            Program(body=[Line(statement=ExpressionStmt(expression=UnaryExpr(operator='-',
+                                                                 argument=Identifier(name='x'))),
+                   linenum=0)])
+        )
     
+    def test_unary_not(tc):
+        tc.assertAst("!var",
+            Program(body=[Line(statement=ExpressionStmt(expression=UnaryExpr(operator='!',
+                                                                 argument=Identifier(name='var'))),
+                   linenum=0)])
+        )
+
+    def test_unary_chaining(tc):
+        tc.assertAst("--pedro",
+            Program(body=[Line(statement=ExpressionStmt(expression=UnaryExpr(operator='-',
+                                                                 argument=UnaryExpr(operator='-',
+                                                                                    argument=Identifier(name='pedro')))),
+                   linenum=0)])
+        )
+        tc.assertAst("-!pedro",
+            Program(body=[Line(statement=ExpressionStmt(expression=UnaryExpr(operator='-',
+                                                                 argument=UnaryExpr(operator='!',
+                                                                                    argument=Identifier(name='pedro')))),
+                   linenum=0)])
+        )
+        tc.assertAst("+-pedro",
+            Program(body=[Line(statement=ExpressionStmt(expression=UnaryExpr(operator='+',
+                                                                 argument=UnaryExpr(operator='-',
+                                                                                    argument=Identifier(name='pedro')))),
+                   linenum=0)])
+        )
+    
+class comparisonTests(parserTestCase):
+    def test_greater_then(tc):
+        tc.assertAst(
+            'x > 0',
+            Program(body=[Line(statement=ExpressionStmt(expression=BinaryExpr(operator='>',
+                                                                  left=Identifier(name='x'),
+                                                                  right=IntLiteral(value=0))),
+                   linenum=0)])
+        )
+
+    def test_equality(tc):
+        tc.assertAst(
+            'x == 0',
+            Program(body=[Line(statement=ExpressionStmt(expression=BinaryExpr(operator='==',
+                                                                  left=Identifier(name='x'),
+                                                                  right=IntLiteral(value=0))),
+                   linenum=0)])
+        )
+        tc.assertAst(
+            'x <> 0',
+            Program(body=[Line(statement=ExpressionStmt(expression=BinaryExpr(operator='<>',
+                                                                  left=Identifier(name='x'),
+                                                                  right=IntLiteral(value=0))),
+                   linenum=0)])
+        )
+
+class logicalTests(parserTestCase):
+    def test_and(tc):
+        tc.assertAst(
+            'x > 0 && y < 1',
+            Program(body=[Line(statement=ExpressionStmt(expression=LogicalExpr(operator='&&',
+                                                                   left=BinaryExpr(operator='>',
+                                                                                   left=Identifier(name='x'),
+                                                                                   right=IntLiteral(value=0)),
+                                                                   right=BinaryExpr(operator='<',
+                                                                                    left=Identifier(name='y'),
+                                                                                    right=IntLiteral(value=1)))),
+                   linenum=0)])
+        )
+
+    def test_or(tc):
+        tc.assertAst(
+            'z >= 69 || a <= 13.37',
+            Program(body=[Line(statement=ExpressionStmt(expression=LogicalExpr(operator='||',
+                                                                   left=BinaryExpr(operator='>=',
+                                                                                   left=Identifier(name='z'),
+                                                                                   right=IntLiteral(value=69)),
+                                                                   right=BinaryExpr(operator='<=',
+                                                                                    left=Identifier(name='a'),
+                                                                                    right=FloatLiteral(value=13.37)))),
+                   linenum=0)])
+        )
 
 class statmentTests(parserTestCase):
     def test_let_stmt(tc):
@@ -213,6 +327,25 @@ class labelTests(parserTestCase):
             Program(body=[Label(name='name'), Line(statement=VariableDecl(iden=Identifier(name='i'), init=IntLiteral(value=1)), linenum=0)])
         )
     
+class functionTests(parserTestCase):
+    def test_rnd(tc):
+        tc.assertAst(
+            '42  RND (1,10)',
+            Program(body=[Line(statement=ExpressionStmt(expression=Func(name='RND',
+                                                            arguments=[IntLiteral(value=1),
+                                                                       IntLiteral(value=10)])),
+                   linenum=42)])
+        )
+
+    def test_usr(tc):
+        tc.assertAst(
+            '42  USR(0x7fff, 0, 1)',
+            Program(body=[Line(statement=ExpressionStmt(expression=Func(name='USR',
+                                                            arguments=[IntLiteral(value=32767),
+                                                                       IntLiteral(value=0),
+                                                                       IntLiteral(value=1)])),
+                   linenum=42)])
+        )
 
 # --- exec ---
 if __name__=='__main__':
