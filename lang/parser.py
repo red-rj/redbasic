@@ -41,7 +41,7 @@ class Parser:
         self.lookahead = self.tokenizer.next_token()
 
         return self.program()
-
+    
 
     def program(self):
         return Program(self.line_list())
@@ -373,4 +373,18 @@ class Parser:
     def skip(self, tok:Token):
         while self.lookahead.token == tok:
             self.eat()
+
+    def getloc(self):
+        line = column = 0
+        cur = self.tokenizer.cursor
+
+        for i in range(cur):
+            c = self.string[i]
+            if c == '\n':
+                line += 1
+                column = 0
+            else:
+                column += 1
+            
+        return Location(line, column)
 

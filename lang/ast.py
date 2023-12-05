@@ -1,6 +1,5 @@
 # redbasic AST
-from dataclasses import dataclass
-import typing
+from dataclasses import dataclass, field
 
 # TODO: add precise location to AST nodes
 @dataclass
@@ -9,6 +8,11 @@ class Location:
     column:int
 
 # --- base classes ---
+# TODO: Make this the root of all nodes
+@dataclass
+class Ast:
+    "root of all AST nodes"
+    location:Location = field(init=False)
 
 class Stmt:
     "base statement type"
@@ -100,10 +104,7 @@ class VariableDecl(Stmt):
 
 @dataclass
 class VariableStmt(Stmt):
-    declarations:list[VariableDecl]
-
-class EmptyStmt(Stmt):
-    pass
+    declarations:list[VariableDecl] 
 
 @dataclass
 class BlockStmt(Stmt):
