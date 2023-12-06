@@ -24,8 +24,14 @@ def is_literal(tok:Token):
 def is_assignment_op(tok:Token):
     return tok == Token.assignment or tok == Token.assignment_complex
 
-def is_print_sep(tok:Token):
-    return tok == Token.comma or tok == Token.semicolon
+def is_operator(tok:Token):
+    other_ops = [Token.additive_op, Token.multiplicative_op, Token.relational_op, Token.equality_op, 
+                 Token.logical_and, Token.logical_not, Token.logical_or]
+    return is_assignment_op(tok) or tok in other_ops
+
+def is_keyword(tok:Token):
+    keywords = [getattr(Token, kw) for kw in dir(Token) if kw.startswith('kw_')]
+    return tok in keywords
 
 
 
@@ -63,7 +69,21 @@ class Parser:
     
     def line_number(self):
         try:
-            return self.integer().value
+            #return self.integer().value
+
+            # the first number found in a line may or may not be a linenum
+            # if it's part of an expression, it's not
+            # TODO: add proper undo/redo
+            prevcursor = self.tokenizer.cursor
+            prevnode = self.lookahead
+
+            num = self.integer().value
+            if not is_operator(self.lookahead.token):
+                return num
+            
+            self.tokenizer.cursor = prevcursor
+            self.lookahead = prevnode
+            return 0
         except SyntaxError:
             return 0
         
@@ -102,7 +122,6 @@ class Parser:
     
     def expression_stmt(self):
         e = self.expression()
-        self.skip('eol')
         return ExpressionStmt(e)
 
     def print_stmt(self):
@@ -114,7 +133,7 @@ class Parser:
             # expr = self.expression()
             expr = self.single_expression()
             sep = None
-            if self.lookahead.token in (',', ';', ':'):
+            if self.lookahead.token in ',;:':
                 sep = self.eat().value
             
             plist.append(PrintItem(expr, sep))

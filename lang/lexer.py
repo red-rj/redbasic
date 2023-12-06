@@ -20,7 +20,7 @@ class Token(StrEnum):
     # relational operators
     relational_op = auto()
 
-    # equality
+    # equality operators
     equality_op = auto()
 
     # assignment
@@ -36,7 +36,7 @@ class Token(StrEnum):
     eof = auto()
 
     # manual values
-    #   keywords
+    # keywords
     kw_print = 'print'
     kw_input = 'input'
     kw_let = 'let'
@@ -56,7 +56,7 @@ class Token(StrEnum):
     # builtin funcs
     f_rnd = 'rnd'
     f_usr = 'usr'
-    #   symbols
+    # symbols
     l_paren = '('
     r_paren = ')'
     comma = ','
@@ -67,8 +67,8 @@ class Token(StrEnum):
 # lang spec definition
 rxc = re.compile
 basic_spec = {
-    # ignorables
     rxc(r"^(\r\n|\n)"): Token.eol,
+    # ignorables
     rxc(r'^\s+'): None,
     rxc(r"^.*\bREM\b.*", re.IGNORECASE): None,
     
@@ -138,7 +138,7 @@ class TokenNode(NamedTuple):
         return self.token != Token.eof
     
     def __repr__(self) -> str:
-        return f"{TokenNode.__name__}({self.token!s}, {self.value!r})"
+        return f"{self.__class__.__name__}({self.token!s}, {self.value!r})"
 
 
 class Tokenizer:

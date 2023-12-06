@@ -1,5 +1,6 @@
 import unittest
-from lang.parser import Parser, parse_int
+from lang.parser import Parser, parse_int, is_keyword
+from lang.lexer import Token
 from lang.ast import *
 
 # --- PARSER TESTS ---
@@ -8,7 +9,7 @@ parser = Parser()
 class parserTestCase(unittest.TestCase):
     def assertAst(tc, code:str, expected):
         ast = parser.parse(code)
-        tc.assertEqual(ast, expected, f"""
+        tc.assertEqual(ast, expected, f"""'{code.strip()}' didn't produce the expected ast:
      {ast=}
 {expected=}""")
         
@@ -17,6 +18,12 @@ class parserHelpers(unittest.TestCase):
         tc.assertEqual(0o77, parse_int('077'))
         tc.assertEqual(0xc00ffee, parse_int('0xC00FFEE'))
         tc.assertEqual(1, parse_int('1'))
+
+    def test_is_keyword(tc):
+        tc.assertTrue(is_keyword(Token.kw_print))
+        tc.assertTrue(is_keyword(Token.kw_false))
+        tc.assertFalse(is_keyword(Token.eol))
+        tc.assertFalse(is_keyword(Token.semicolon))
 
 class mathTests(parserTestCase):
     def test_addition(tc):
@@ -27,7 +34,7 @@ class mathTests(parserTestCase):
         
     def test_nested_add_subtract(tc):
         tc.assertAst(
-            "0  3 + 2 - 2",
+            "  3 + 2 - 2",
             Program([Line(ExpressionStmt(
                     BinaryExpr('-', 
                                BinaryExpr('+', IntLiteral(3), IntLiteral(2)), 
@@ -39,7 +46,7 @@ class mathTests(parserTestCase):
     
     def test_multiplication(tc):
         tc.assertAst(
-            "0  2 * 2",
+            "  2 * 2",
             Program(body=[Line(statement=ExpressionStmt(expression=BinaryExpr(operator='*',
                                                                   left=IntLiteral(value=2),
                                                                   right=IntLiteral(value=2))),
@@ -48,7 +55,7 @@ class mathTests(parserTestCase):
 
     def test_multiplication_nested(tc):
         tc.assertAst(
-            '0  2 * 2 * 2',
+            '  2 * 2 * 2',
             Program(body=[Line(statement=ExpressionStmt(expression=BinaryExpr(operator='*',
                                                                   left=BinaryExpr(operator='*',
                                                                                   left=IntLiteral(value=2),
@@ -78,7 +85,7 @@ class mathTests(parserTestCase):
     
     def test_operator_precedence(tc):
         tc.assertAst(
-            '0  2 + 2 * 2',
+            '  2 + 2 * 2',
             Program(body=[Line(statement=ExpressionStmt(expression=BinaryExpr(operator='+',
                                                                   left=IntLiteral(value=2),
                                                                   right=BinaryExpr(operator='*',
@@ -88,7 +95,7 @@ class mathTests(parserTestCase):
         )
 
         tc.assertAst(
-            '0  (2 + 2) * 2',
+            '  (2 + 2) * 2',
             Program(body=[Line(statement=ExpressionStmt(expression=
                                             BinaryExpr(operator='*',
                                                         left=BinaryExpr(operator='+',
@@ -144,11 +151,11 @@ class assignmentTests(parserTestCase):
         )
     
     def test_complex_assignment(tc):
-        tc.assertAst('1  a += 1',
+        tc.assertAst('a += 1',
                      Program(body=[Line(statement=ExpressionStmt(expression=AssignmentExpr(operator='+=',
                                                                       left=Identifier(name='a'),
                                                                       right=IntLiteral(value=1))),
-                   linenum=1)])
+                   linenum=0)])
         )
 
 
