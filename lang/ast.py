@@ -1,5 +1,6 @@
 # redbasic AST
 from dataclasses import dataclass, field
+import typing
 
 # TODO: add precise location to AST nodes
 @dataclass
@@ -8,17 +9,15 @@ class Location:
     column:int
 
 # --- base classes ---
-# TODO: Make this the root of all nodes
 @dataclass
 class Ast:
     "root of all AST nodes"
-    location:Location = field(init=False)
 
-class Stmt:
+class Stmt(Ast):
     "base statement type"
     pass
 
-class Expr(Stmt):
+class Expr(Ast):
     "base expression type"
     pass
 
@@ -35,6 +34,9 @@ class EmptyNode:
         return f"{self.__class__.__name__}()"
 
 # --- expressions ---
+@dataclass
+class Identifier(Expr):
+    name:str
 
 @dataclass
 class BinaryExpr(Expr):
@@ -46,22 +48,25 @@ class LogicalExpr(BinaryExpr):
     pass
 
 class AssignmentExpr(BinaryExpr):
-    pass
+    left:Identifier
+
+
+literal_t = typing.TypeVar('literal_t', int, float, str)
 
 @dataclass
-class Identifier(Expr):
-    name:str
+class Literal(Expr):
+    value:literal_t
 
 @dataclass
-class IntLiteral(Expr):
+class IntLiteral(Literal):
     value: int
 
 @dataclass
-class FloatLiteral(Expr):
+class FloatLiteral(Literal):
     value: float
 
 @dataclass
-class StringLiteral(Expr):
+class StringLiteral(Literal):
     value:str
 
 @dataclass
@@ -91,24 +96,17 @@ class Line(Stmt):
 class Label:
     name:str
 
+content_t = typing.TypeVar('content_t', Line, Label)
 
 @dataclass
 class Program(Stmt):
     "top level program"
-    body:list[Line]
+    body:list[content_t]
 
 @dataclass
 class VariableDecl(Stmt):
     iden:Identifier
-    init:Expr
-
-@dataclass
-class VariableStmt(Stmt):
-    declarations:list[VariableDecl] 
-
-@dataclass
-class BlockStmt(Stmt):
-    body:list[Stmt]
+    init:AssignmentExpr
 
 @dataclass
 class IfStmt(Stmt):

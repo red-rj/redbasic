@@ -17,7 +17,7 @@
             "type": "python",
             "request": "launch",
             "program": "main.py",
-            "args": ["-f", "Samples\\appendix-e.bas"],
+            "args": ["-c", "69 + 420"],
             "console": "integratedTerminal",
             "justMyCode": true
         },

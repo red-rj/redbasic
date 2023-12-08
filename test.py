@@ -347,7 +347,7 @@ class functionTests(parserTestCase):
         tc.assertAst(
             '42  USR(0x7fff, 0, 1)',
             Program(body=[Line(statement=ExpressionStmt(expression=Func(name='USR',
-                                                            arguments=[IntLiteral(value=32767),
+                                                            arguments=[IntLiteral(value=0x7fff),
                                                                        IntLiteral(value=0),
                                                                        IntLiteral(value=1)])),
                    linenum=42)])

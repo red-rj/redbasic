@@ -30,8 +30,7 @@ def is_operator(tok:Token):
     return is_assignment_op(tok) or tok in other_ops
 
 def is_keyword(tok:Token):
-    keywords = [getattr(Token, kw) for kw in dir(Token) if kw.startswith('kw_')]
-    return tok in keywords
+    return tok in (kw for kw in Token if kw.name.startswith('kw_'))
 
 
 
@@ -284,6 +283,17 @@ class Parser:
     def multiplicative_expr(self) -> BinaryExpr:
         return self._mk_expr(self.unary_expr, Token.multiplicative_op, BinaryExpr)
     
+    def _mk_expr(self, higher_expr, operator, Cls):
+        left = higher_expr()
+
+        while self.lookahead.token == operator:
+            op = self.eat().value
+            right = higher_expr()
+            left = Cls(op, left, right)
+
+        return left
+
+
     def unary_expr(self):
         op = None
 
@@ -345,18 +355,6 @@ class Parser:
                 return  self.floatingpoint()
             case Token.string_literal:
                 return self.string_literal()
-
-    # ---
-
-    def _mk_expr(self, higher_expr, operator, Cls):
-        left = higher_expr()
-
-        while self.lookahead.token == operator:
-            op = self.eat().value
-            right = higher_expr()
-            left = Cls(op, left, right)
-
-        return left
 
 
     def eat(self, expected:Token = None):

@@ -1,6 +1,7 @@
 import sys
 import argparse
 from lang.parser import Parser
+from runtime.interpreter import Interpreter
 from pprint import pprint
 
 # baseado nesses cursos
@@ -29,7 +30,10 @@ def main():
         pargs.print_help()
         exit(5)
 
-    pprint(ast)
+    #pprint(ast)
+    interp = Interpreter(p)
+    interp.exec_program(ast)
+    print(interp.variables)
 
 if __name__=='__main__':
     main()
