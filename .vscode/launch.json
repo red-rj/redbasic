@@ -17,7 +17,7 @@
             "type": "python",
             "request": "launch",
             "program": "main.py",
-            "args": ["-c", "69 + 420"],
+            "args": ["-c", "let var = 69 + 420"],
             "console": "integratedTerminal",
             "justMyCode": true
         },

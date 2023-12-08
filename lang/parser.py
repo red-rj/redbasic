@@ -242,9 +242,11 @@ class Parser:
         seq = self.sequence_expr()
         if len(seq) > 1:
             return seq
-        else:
-            return seq[0]
+        
+        return seq[0]
+            
     
+    # TODO: return ast.SequenceExpr
     def sequence_expr(self):
         exprs = [ self.assignment_expr() ]
         while self.lookahead.token == ',':
