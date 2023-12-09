@@ -20,6 +20,7 @@ def builtin_usr(out:TextIO, *args):
     out.write(f"<usr func {args=}\n")
 
 
+
 class Interpreter:
     "Redbasic interpreter"
 
@@ -31,6 +32,11 @@ class Interpreter:
         self.cur_linenum = 0
         self.variables = {}
         self.labels:dict[str,int] = {}
+        self.ast = ast.Program([])
+
+    
+    def add_line(self, astLine):
+        self.ast.body.append(astLine)
 
 
     def exec_program(self, prog:ast.Program):
@@ -51,9 +57,8 @@ class Interpreter:
             self.idx += 1
 
             
-    def exec(self, code:str):
-        prog = self.parser.parse(code)
-        self.exec_program(prog)
+    def exec(self):
+        self.exec_program(self.ast)
 
     def exec_statement(self, stmt:ast.Stmt):
         if isinstance(stmt, ast.VariableDecl):
