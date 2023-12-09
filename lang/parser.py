@@ -47,22 +47,32 @@ class Parser:
 
         return self.program()
     
+    def parse_line(self, code):
+        self.tokenizer.reset(code)
+        self.lookahead = self.tokenizer.next_token()
+
+        return self.line()
+
+    # -----
 
     def program(self):
         return Program(self.line_list())
     
+    def line(self):
+        self.skip('eol')
+        if self.lookahead.token == Token.named_label:
+            return self.label()
+        
+        linenum = self.line_number()
+        stmt = self.statement()
+        self.skip('eol')
+        return Line(stmt, linenum)
+
+    
     def line_list(self):
         lines = []
-
-        self.skip('eol')
         while self.lookahead:
-            if self.lookahead.token == Token.named_label:
-                lines.append(self.label())
-            else:
-                linenum = self.line_number()
-                s = self.statement()
-                lines.append(Line(s, linenum))
-            self.skip('eol')
+            lines.append(self.line())
 
         return lines
     
@@ -90,9 +100,6 @@ class Parser:
 
     def statement(self):
         match self.lookahead.token:
-            case 'eol':
-                self.skip('eol')
-                return self.statement()
             case 'print':
                 return self.print_stmt()
             case 'input':

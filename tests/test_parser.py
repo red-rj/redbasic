@@ -1,4 +1,9 @@
 import unittest
+
+# HACK: fix imports
+import pathlib, sys
+sys.path.append(str(pathlib.Path(__file__).absolute().parent.parent))
+
 from lang.parser import Parser, parse_int, is_keyword
 from lang.lexer import Token
 from lang.ast import *

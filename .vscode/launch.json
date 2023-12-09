@@ -25,7 +25,7 @@
             "name": "redbasic all tests",
             "type": "python",
             "request": "launch",
-            "program": "test.py",
+            "program": "tests/test_parser.py",
             "args": [],
             "console": "integratedTerminal",
             "justMyCode": true
