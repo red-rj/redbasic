@@ -226,7 +226,7 @@ class Parser:
         args = self.sequence_expr()
         self.eat(')')
 
-        return Func(name, args)
+        return Func(name.casefold(), args)
     
     def end_stmt(self):
         self.eat('end')

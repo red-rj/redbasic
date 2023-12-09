@@ -4,32 +4,52 @@ import typing
 import lang.ast as ast
 from lang.parser import Parser
 from enum import Enum, auto
+import random
 
 
 number = typing.TypeVar('number', int, float)
 TextIO = io.TextIOBase
 
+def builtin_rnd(min:int, max:int=None):
+    if max is None:
+        min, max = 0, min
+
+    return random.randint(min, max)
+
+def builtin_usr(out:TextIO, *args):
+    out.write(f"<usr func {args=}\n")
+
 
 class Interpreter:
     "Redbasic interpreter"
 
-    def __init__(self, parser:Parser, out:TextIO=sys.stdout):
+    def __init__(self, parser:Parser, out:TextIO=sys.stdout, in_:TextIO=sys.stdin):
         self.parser = parser
-        self.out = out
+        self.output = out
+        self.input = in_
         self.idx = 0
+        self.cur_linenum = 0
         self.variables = {}
         self.labels:dict[str,int] = {}
 
 
     def exec_program(self, prog:ast.Program):
-        for i, item in enumerate(prog.body):
-            self.idx = i
+        self.ast = prog
+        maxidx = len(prog.body)
+        
+        while self.idx < maxidx:
+            item = prog.body[self.idx]
+
             if isinstance(item, ast.Line):
+                self.cur_linenum = item.linenum
                 self.exec_statement(item.statement)
             elif isinstance(item, ast.Label):
                 self.labels[item.name] = self.idx + 1
             else:
                 raise RuntimeError("Bad Program body")
+            
+            self.idx += 1
+
             
     def exec(self, code:str):
         prog = self.parser.parse(code)
@@ -43,6 +63,12 @@ class Interpreter:
         elif isinstance(stmt, ast.ExpressionStmt):
             val = self.eval(stmt.expression)
             self.setvar("_", val)
+        elif isinstance(stmt, ast.PrintStmt):
+            self.print_stmt(stmt)
+        elif isinstance(stmt, ast.GotoStmt):
+            self.goto_stmt(stmt)
+        elif isinstance(stmt, ast.EndStmt):
+            self.idx = float('inf')
         else:
             raise NotImplementedError(f"unsupported statement {stmt}")
 
@@ -62,9 +88,60 @@ class Interpreter:
             return self.eval_unary_expr()
         elif isinstance(expr, ast.Identifier):
             return self.getvar(expr.name)
-        
+        elif isinstance(expr, ast.Func):
+            return self.func(expr)
         
         raise NotImplementedError(f"unsupported expression {expr}")
+
+    def func(self, func:ast.Func):
+        if func.name == 'rnd':
+            error = ''
+            args = self.eval(func.arguments)          
+
+            if len(func.arguments) > 2:
+                error = "too many arguments"
+            elif len(func.arguments) == 0:
+                error = "not enough arguments"
+            elif not all(isinstance(t, (int, float)) for t in args):
+                error = 'invalid argument type'
+            
+            if error:
+                raise RuntimeError("rnd: "+error)
+            
+            return builtin_rnd(*args)
+        elif func.name == 'usr':
+            args = self.eval(func.arguments)
+            builtin_usr(self.output, *args)
+
+
+    def print_stmt(self, printstmt:ast.PrintStmt):
+        for item in printstmt.printlist:
+            val = self.eval(item.expression)
+            if item.sep == ',':
+                string = f"{val}{' '*8}"
+            else:
+                string = str(val)
+            
+            self.output.write(string)
+        self.output.write('\n')
+
+
+    def goto_stmt(self, goto:ast.GotoStmt):
+        dest = self.eval(goto.destination)
+
+        if isinstance(dest, int):
+            for i, line in enumerate(self.ast.body):
+                if isinstance(line, ast.Label):
+                    continue
+
+                if line.linenum == dest:
+                    self.idx = i
+                    break
+        elif isinstance(dest, str):
+            self.idx = self.labels[dest]
+
+
+        
 
 
     def eval_assignment(self, expr:ast.AssignmentExpr):
@@ -106,8 +183,8 @@ class Interpreter:
                 return lhs * rhs
             case '/':
                 return lhs / rhs
-            case _:
-                raise RuntimeError(f"bad binary operator '{expr.operator}'")
+            
+        raise RuntimeError(f"bad binary operator '{expr.operator}'")
 
     def eval_logical_expr(self, expr:ast.LogicalExpr):
         lhs = self.eval(expr.left)
