@@ -1,7 +1,7 @@
 # RedBasic
 ## A simple basic implementation
 
-This is a implementation of TinyBasic in python.
+This is a implementation of the BASIC programing language in python. It's based on TinyBasic, but not intented to be compatible with it.
 
 ## Expression precendence (low to high)
 - sequence

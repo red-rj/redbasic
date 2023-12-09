@@ -337,7 +337,7 @@ class functionTests(parserTestCase):
     def test_rnd(tc):
         tc.assertAst(
             '42  RND (1,10)',
-            Program(body=[Line(statement=ExpressionStmt(expression=Func(name='RND',
+            Program(body=[Line(statement=ExpressionStmt(expression=Func(name='rnd',
                                                             arguments=[IntLiteral(value=1),
                                                                        IntLiteral(value=10)])),
                    linenum=42)])
@@ -346,7 +346,7 @@ class functionTests(parserTestCase):
     def test_usr(tc):
         tc.assertAst(
             '42  USR(0x7fff, 0, 1)',
-            Program(body=[Line(statement=ExpressionStmt(expression=Func(name='USR',
+            Program(body=[Line(statement=ExpressionStmt(expression=Func(name='usr',
                                                             arguments=[IntLiteral(value=0x7fff),
                                                                        IntLiteral(value=0),
                                                                        IntLiteral(value=1)])),
