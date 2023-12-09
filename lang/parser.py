@@ -135,7 +135,7 @@ class Parser:
 
         # print list
         plist = []
-        while self.lookahead.token != 'eol':
+        while self.lookahead and self.lookahead.token != 'eol':
             # expr = self.expression()
             expr = self.single_expression()
             sep = None
@@ -144,7 +144,7 @@ class Parser:
             
             plist.append(PrintItem(expr, sep))
 
-        self.eat('eol')
+        #self.eat('eol')
         return PrintStmt(plist)
 
     def input_stmt(self):
