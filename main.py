@@ -1,5 +1,6 @@
-import sys
+import sys, io
 import argparse
+import lang.ast as ast
 from lang.parser import Parser
 from runtime.interpreter import Interpreter
 
@@ -10,13 +11,18 @@ from runtime.interpreter import Interpreter
 def repl(parser:Parser):
     interp = Interpreter(parser)
     print("redbasic REPL v0.0")
+    buffer = io.StringIO()
 
     while 1:
         code = input("> ")
-        line = parser.parse_line(code)
-        interp.ast.body.append(line)
-        if code.casefold() == 'run':
-            interp.exec()
+        buffer.write(code + '\n')
+
+        lineast = parser.parse_line(code)
+
+        if isinstance(lineast.statement, ast.RunStmt):
+            prog = parser.parse(buffer.getvalue())
+            interp.exec_program(prog)
+        
 
 def main():
     pargs = argparse.ArgumentParser()

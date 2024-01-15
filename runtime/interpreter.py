@@ -2,8 +2,8 @@ import io
 import sys
 import typing
 import lang.ast as ast
+from lang.ast import literal_t
 from lang.parser import Parser
-from enum import Enum, auto
 import random
 
 
@@ -61,42 +61,44 @@ class Interpreter:
         self.exec_program(self.ast)
 
     def exec_statement(self, stmt:ast.Stmt):
-        if isinstance(stmt, ast.VariableDecl):
-            name = stmt.iden.name
-            value = self.eval(stmt.init)
-            self.setvar(name, value)
-        elif isinstance(stmt, ast.ExpressionStmt):
-            val = self.eval(stmt.expression)
-            self.setvar("_", val)
-        elif isinstance(stmt, ast.PrintStmt):
-            self.print_stmt(stmt)
-        elif isinstance(stmt, ast.GotoStmt):
-            self.goto_stmt(stmt)
-        elif isinstance(stmt, ast.EndStmt):
-            self.idx = float('inf')
-        else:
-            raise NotImplementedError(f"unsupported statement {stmt}")
+        match stmt:
+            case ast.VariableDecl():
+                name = stmt.iden.name
+                value = self.eval(stmt.init)
+                self.setvar(name, value)
+            case ast.ExpressionStmt():
+                val = self.eval(stmt.expression)
+                self.setvar("_", val)
+            case ast.PrintStmt():
+                self.print_stmt(stmt)
+            case ast.GotoStmt():
+                self.goto_stmt(stmt)
+            case ast.EndStmt():
+                self.idx = float('inf')
+            case _:
+                raise NotImplementedError(f"unsupported statement {stmt}")
 
 
-    def eval(self, expr:ast.Expr) -> ast.literal_t:
-        if isinstance(expr, ast.Literal):
-            return expr.value
-        elif isinstance(expr, list): # SequenceExpr
-            return [self.eval(e) for e in expr]
-        elif isinstance(expr, ast.AssignmentExpr):
-            return self.eval_assignment(expr)
-        elif isinstance(expr, ast.LogicalExpr):
-            return self.eval_logical_expr(expr)
-        elif isinstance(expr, ast.BinaryExpr):
-            return self.eval_binary_expr(expr)
-        elif isinstance(expr, ast.UnaryExpr):
-            return self.eval_unary_expr()
-        elif isinstance(expr, ast.Identifier):
-            return self.getvar(expr.name)
-        elif isinstance(expr, ast.Func):
-            return self.func(expr)
-        
-        raise NotImplementedError(f"unsupported expression {expr}")
+    def eval(self, expr:ast.Expr) -> literal_t:
+        match expr:
+            case ast.Literal():
+                return expr.value
+            case list():
+                return [self.eval(e) for e in expr] # SequenceExpr
+            case ast.AssignmentExpr():
+                return self.eval_assignment(expr)
+            case ast.LogicalExpr():
+                return self.eval_logical_expr(expr)
+            case ast.BinaryExpr():
+                return self.eval_binary_expr(expr)
+            case ast.UnaryExpr():
+                return self.eval_unary_expr()
+            case ast.Identifier():
+                return self.getvar(expr.name)
+            case ast.Func():
+                return self.func(expr)
+            case _:        
+                raise NotImplementedError(f"unsupported expression {expr}")
 
     def func(self, func:ast.Func):
         if func.name == 'rnd':
