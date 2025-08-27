@@ -275,34 +275,65 @@ class Parser:
     single_expression = assignment_expr
 
     def logical_or_expr(self) -> LogicalExpr:
-        return self._mk_expr(self.logical_and_expr, Token.logical_or, LogicalExpr)
-    
-    def logical_and_expr(self) -> LogicalExpr:
-        return self._mk_expr(self.equality_expr, Token.logical_and, LogicalExpr)
-    
-    def equality_expr(self) -> BinaryExpr:
-        return self._mk_expr(self.relational_expr, Token.equality_op, BinaryExpr)
-    
-    def relational_expr(self) -> BinaryExpr:
-        return self._mk_expr(self.additive_expr, Token.relational_op, BinaryExpr)
-    
-    def additive_expr(self) -> BinaryExpr:
-        return self._mk_expr(self.multiplicative_expr, Token.additive_op, BinaryExpr)
-    
-    def multiplicative_expr(self) -> BinaryExpr:
-        return self._mk_expr(self.unary_expr, Token.multiplicative_op, BinaryExpr)
-    
-    def _mk_expr(self, higher_expr, operator, Cls):
-        left = higher_expr()
+        left = self.logical_and_expr()
 
-        while self.lookahead.token == operator:
+        while self.lookahead.token == Token.logical_or:
             op = self.eat().value
-            right = higher_expr()
-            left = Cls(op, left, right)
+            right = self.logical_and_expr()
+            left = LogicalExpr(op, left, right)
 
         return left
+    
+    def logical_and_expr(self) -> LogicalExpr:
+        left = self.equality_expr()
 
+        while self.lookahead.token == Token.logical_and:
+            op = self.eat().value
+            right = self.equality_expr()
+            left = LogicalExpr(op, left, right)
 
+        return left
+    
+    def equality_expr(self) -> BinaryExpr:
+        left = self.relational_expr()
+
+        while self.lookahead.token == Token.equality_op:
+            op = self.eat().value
+            right = self.relational_expr()
+            left = BinaryExpr(op, left, right)
+
+        return left
+    
+    def relational_expr(self) -> BinaryExpr:
+        left = self.additive_expr()
+
+        while self.lookahead.token == Token.relational_op:
+            op = self.eat().value
+            right = self.additive_expr()
+            left = BinaryExpr(op, left, right)
+
+        return left
+    
+    def additive_expr(self) -> BinaryExpr:
+        left = self.multiplicative_expr()
+
+        while self.lookahead.token == Token.additive_op:
+            op = self.eat().value
+            right = self.multiplicative_expr()
+            left = BinaryExpr(op, left, right)
+
+        return left
+    
+    def multiplicative_expr(self) -> BinaryExpr:
+        left = self.unary_expr()
+
+        while self.lookahead.token == Token.multiplicative_op:
+            op = self.eat().value
+            right = self.unary_expr()
+            left = BinaryExpr(op, left, right)
+
+        return left
+    
     def unary_expr(self):
         op = None
 
