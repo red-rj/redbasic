@@ -148,6 +148,7 @@ class Tokenizer:
     def reset(self, string:str = None):
         self.string = string
         self.cursor = 0
+        self.line = 1
 
     def has_more_tokens(self):
         return self.cursor < len(self.string)
@@ -166,6 +167,9 @@ class Tokenizer:
             if not matched:
                 continue
             
+            if token == Token.eol:
+                self.line += 1
+
             token_value = matched.group(0)
             self.cursor += len(token_value)
 

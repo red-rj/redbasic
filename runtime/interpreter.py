@@ -4,17 +4,18 @@ import typing
 import lang.ast as ast
 from lang.ast import literal_t
 from lang.parser import Parser
-import random
+from lang.lexer import Token
 
 
 number = typing.TypeVar('number', int, float)
 TextIO = io.TextIOBase
 
 def builtin_rnd(min:int, max:int=None):
+    from random import randint
     if max is None:
         min, max = 0, min
 
-    return random.randint(min, max)
+    return randint(min, max)
 
 def builtin_usr(out:TextIO, *args):
     out.write(f"<usr func {args=}\n")
@@ -83,8 +84,8 @@ class Interpreter:
         match expr:
             case ast.Literal():
                 return expr.value
-            case list():
-                return [self.eval(e) for e in expr] # SequenceExpr
+            case list():# SequenceExpr
+                return [self.eval(e) for e in expr] 
             case ast.AssignmentExpr():
                 return self.eval_assignment(expr)
             case ast.LogicalExpr():
@@ -124,10 +125,12 @@ class Interpreter:
     def print_stmt(self, printstmt:ast.PrintStmt):
         for item in printstmt.printlist:
             val = self.eval(item.expression)
-            if item.sep == ',':
+            if item.sep == Token.comma:
                 string = f"{val}{' '*8}"
-            else:
+            elif item.sep == Token.semicolon:
                 string = str(val)
+            else:
+                raise SyntaxError(f"Bad print separator '{item.sep}'")
             
             self.output.write(string)
         self.output.write('\n')
@@ -146,9 +149,9 @@ class Interpreter:
                     break
         elif isinstance(dest, str):
             self.idx = self.labels[dest]
+        else:
+            raise ValueError(f"Unexpected goto arg {dest!r}")
 
-
-        
 
 
     def eval_assignment(self, expr:ast.AssignmentExpr):
