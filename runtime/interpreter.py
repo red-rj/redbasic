@@ -2,7 +2,6 @@ import io
 import sys
 import typing
 import lang.ast as ast
-from lang.ast import literal_t
 from lang.parser import Parser
 from lang.lexer import Token
 
@@ -25,19 +24,29 @@ def builtin_usr(out:TextIO, *args):
 class Interpreter:
     "Redbasic interpreter"
 
-    def __init__(self, parser:Parser, out:TextIO=sys.stdout, in_:TextIO=sys.stdin):
-        self.parser = parser
+    TEMP_VAR = '_'
+
+    def __init__(self, parser:Parser = None, out:TextIO=sys.stdout, in_:TextIO=sys.stdin):
+        self.parser = parser if parser is not None else Parser()
         self.output = out
         self.input = in_
         self.idx = 0
         self.cur_linenum = 0
         self.variables = {}
         self.labels:dict[str,int] = {}
-        self.ast = ast.Program([])
+        self.ast:ast.Program = None
 
     
-    def add_line(self, astLine):
-        self.ast.body.append(astLine)
+    def add_line(self, astLine:str):
+        tp = Parser()
+        l = tp.parse_line(astLine)
+        if self.ast:
+            self.ast.body.append(l)
+        else:
+            self.ast = ast.Program([l])
+
+    def set_source(self, code:str):
+        self.ast = self.parser.parse(code)
 
 
     def exec_program(self, prog:ast.Program):
@@ -69,18 +78,23 @@ class Interpreter:
                 self.setvar(name, value)
             case ast.ExpressionStmt():
                 val = self.eval(stmt.expression)
-                self.setvar("_", val)
+                self.setvar(self.TEMP_VAR, val)
             case ast.PrintStmt():
-                self.print_stmt(stmt)
+                self.eval_print(stmt)
             case ast.GotoStmt():
-                self.goto_stmt(stmt)
+                self.eval_goto(stmt)
             case ast.EndStmt():
                 self.idx = float('inf')
+            case ast.IfStmt():
+                self.eval_if(stmt)
+            case ast.InputStmt():
+                self.eval_input(stmt)
+            case ast.InteractiveStmt():
+                pass
             case _:
                 raise NotImplementedError(f"unsupported statement {stmt}")
 
-
-    def eval(self, expr:ast.Expr) -> literal_t:
+    def eval(self, expr:ast.Expr) -> ast.literal_t:
         match expr:
             case ast.Literal():
                 return expr.value
@@ -97,11 +111,11 @@ class Interpreter:
             case ast.Identifier():
                 return self.getvar(expr.name)
             case ast.Func():
-                return self.func(expr)
+                return self.eval_func(expr)
             case _:        
                 raise NotImplementedError(f"unsupported expression {expr}")
 
-    def func(self, func:ast.Func):
+    def eval_func(self, func:ast.Func):
         if func.name == 'rnd':
             error = ''
             args = self.eval(func.arguments)          
@@ -122,7 +136,7 @@ class Interpreter:
             builtin_usr(self.output, *args)
 
 
-    def print_stmt(self, printstmt:ast.PrintStmt):
+    def eval_print(self, printstmt:ast.PrintStmt):
         for item in printstmt.printlist:
             val = self.eval(item.expression)
             if item.sep == Token.comma:
@@ -136,7 +150,7 @@ class Interpreter:
         self.output.write('\n')
 
 
-    def goto_stmt(self, goto:ast.GotoStmt):
+    def eval_goto(self, goto:ast.GotoStmt):
         dest = self.eval(goto.destination)
 
         if isinstance(dest, int):
@@ -152,6 +166,21 @@ class Interpreter:
         else:
             raise ValueError(f"Unexpected goto arg {dest!r}")
 
+
+    def eval_if(self, stmt:ast.IfStmt):
+        cond = self.eval(stmt.test)
+        if cond:
+            self.exec_statement(stmt.consequent)
+        elif stmt.alternate:
+            self.exec_statement(stmt.alternate)
+
+    def eval_input(self, stmt:ast.InputStmt):
+        for var in stmt.varlist:
+            self.output.write(f"input[{var.name}]> ")
+            line = self.input.readline()
+            expr = self.parser.parse_line(line)
+            value = self.eval(expr)
+            self.setvar(var.name, value)
 
 
     def eval_assignment(self, expr:ast.AssignmentExpr):
@@ -233,6 +262,3 @@ class Interpreter:
         
     def setvar(self, name:str, value):
         self.variables[name] = value
-
-
-

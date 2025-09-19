@@ -93,7 +93,7 @@ class Line(Stmt):
     linenum:int = 0
 
 @dataclass
-class Label:
+class Label(Stmt):
     name:str
 
 content_t = typing.TypeVar('content_t', Line, Label)
@@ -139,9 +139,9 @@ class VariableDecl(Stmt):
     iden:Identifier
     init:Expr
 
-@dataclass
-class LetStmt(Stmt):
-    declarations:list[VariableDecl]
+# @dataclass
+# class LetStmt(Stmt):
+#     declarations:list[VariableDecl]
 
 @dataclass
 class ExpressionStmt(Stmt):
@@ -153,16 +153,16 @@ class IfStmt(Stmt):
     consequent:Stmt
     alternate:Stmt
 
-class SimpleStmt(EmptyNode, Stmt):
+class ReturnStmt(Stmt):
     pass
 
-class ClearStmt(SimpleStmt):
+class InteractiveStmt(EmptyNode, Stmt):
     pass
 
-class ReturnStmt(SimpleStmt):
+class ClearStmt(InteractiveStmt):
     pass
 
-class EndStmt(SimpleStmt):
+class EndStmt(InteractiveStmt):
     pass
 
 @dataclass

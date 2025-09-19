@@ -1,4 +1,4 @@
-import sys, io
+import os, sys, io
 import argparse
 import lang.ast as ast
 from lang.parser import Parser
@@ -12,16 +12,21 @@ def repl(parser:Parser):
     interp = Interpreter(parser)
     print("redbasic REPL v0.0")
     buffer = io.StringIO()
+    body = []
 
     while 1:
         code = input("> ")
         buffer.write(code + '\n')
 
         lineast = parser.parse_line(code)
+        body.append(lineast)
 
         if isinstance(lineast.statement, ast.RunStmt):
-            prog = parser.parse(buffer.getvalue())
+            #prog = parser.parse(buffer.getvalue())
+            prog = ast.Program(body)
             interp.exec_program(prog)
+        if isinstance(lineast.statement, ast.ClearStmt):
+            os.system('cls' if os.name == 'nt' else 'clear')
         
 
 def main():

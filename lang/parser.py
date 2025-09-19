@@ -36,21 +36,19 @@ def is_keyword(tok:Token):
 
 class Parser:
     def __init__(self):
-        self.string = ''
         self.tokenizer = Tokenizer()
     
-    def parse(self, textcode):
-        self.string = textcode
-        self.tokenizer.reset(textcode)
-
-        self.lookahead = self.tokenizer.next_token()
-
-        return self.program()
-    
-    def parse_line(self, code):
+    def set_source(self, code:str):
         self.tokenizer.reset(code)
         self.lookahead = self.tokenizer.next_token()
-
+ 
+    def parse(self, textcode:str=None):
+        if textcode:
+            self.set_source(textcode)
+        return self.program()
+    
+    def parse_line(self, code:str):
+        self.set_source(code)
         return self.line()
 
     # -----
@@ -100,27 +98,27 @@ class Parser:
 
     def statement(self):
         match self.lookahead.token:
-            case 'print':
+            case Token.kw_print:
                 return self.print_stmt()
-            case 'input':
+            case Token.kw_input:
                 return self.input_stmt()
-            case 'goto':
+            case Token.kw_goto:
                 return self.goto_stmt()
-            case 'gosub':
+            case Token.kw_gosub:
                 return self.gosub_stmt()
-            case 'let':
+            case Token.kw_let:
                 return self.let_stmt()
-            case 'if':
+            case Token.kw_if:
                 return self.if_stmt()
-            case 'clear':
+            case Token.kw_clear:
                 return self.clear_stmt()
-            case 'run':
+            case Token.kw_run:
                 return self.run_stmt()
-            case 'list':
+            case Token.kw_list:
                 return self.list_stmt()
-            case 'end':
+            case Token.kw_end:
                 return self.end_stmt()
-            case 'return':
+            case Token.kw_return:
                 return self.return_stmt()
             case _:
                 return self.expression_stmt()
@@ -182,15 +180,15 @@ class Parser:
         return VariableDecl(iden, init)
 
     def if_stmt(self):
-        self.eat('if')
+        self.eat(Token.kw_if)
         test = self.expression()
         
-        if self.lookahead.token == 'then':
+        if self.lookahead.token == Token.kw_then:
             self.eat()
 
         consequent = self.statement()
 
-        if self.lookahead.token == 'else':
+        if self.lookahead.token == Token.kw_else:
             self.eat()
             alt = self.statement()
         else:
@@ -199,11 +197,11 @@ class Parser:
         return IfStmt(test, consequent, alt)
 
     def clear_stmt(self):
-        self.eat('clear')
+        self.eat(Token.kw_clear)
         return ClearStmt()
     
     def run_stmt(self):
-        self.eat('run')
+        self.eat(Token.kw_run)
         args = None
         try:
             self.eat(',')
@@ -213,7 +211,7 @@ class Parser:
         return RunStmt(args)
 
     def list_stmt(self):
-        self.eat('list')
+        self.eat(Token.kw_list)
 
         args = self.expression()
         mode = 'code'
