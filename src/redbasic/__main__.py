@@ -1,9 +1,7 @@
 import os, sys, io
-import argparse, pprint
-from .parser import Parser
-from .interpreter import Interpreter
-from . import ast
-
+import argparse
+from . import ast, Parser, Interpreter
+import pprint
 
 # baseado nesses cursos
 # https://www.udemy.com/share/10416o3@N9X6Bjw-H_pG4ToOt2Ziwam5GYDem5TVH65wxJ4zMRYt0RPOS055QUvpe49AeSIW/
@@ -33,8 +31,9 @@ def repl(parser:Parser):
 def main():
     pargs = argparse.ArgumentParser()
     pargs.add_argument('-c', dest='code')
-    pargs.add_argument('-f', dest='file')
+    pargs.add_argument('-f', dest='file', type=argparse.FileType('r'))
     pargs.add_argument('-i', dest='interactive', action='store_true')
+    pargs.add_argument('--dump', action='append', choices=('ast', 'vars'))
 
     args = pargs.parse_args()
     p = Parser()
@@ -42,12 +41,8 @@ def main():
     if args.code:
         ast = p.parse(args.code)
     elif args.file:
-        filename = args.file
-        if filename == '-':
-            filename = sys.stdin.fileno()
-        
-        with open(filename, 'r', encoding='utf8') as f:
-            ast = p.parse(f.read())
+        text = args.file.read()
+        ast = p.parse(text)
     elif args.interactive:
         repl(p)
         exit()
@@ -56,11 +51,16 @@ def main():
         pargs.print_help()
         exit(5)
 
-    #pprint(ast)
     interp = Interpreter(p)
+
+    if args.dump and 'ast' in args.dump:
+        pprint.pp(ast)
+
     interp.exec_program(ast)
-    pprint.pp(ast)
-    pprint.pp(interp.variables)
+
+    if args.dump and 'vars' in args.dump:
+        pprint.pp(interp.variables)
+
 
 if __name__=='__main__':
     main()

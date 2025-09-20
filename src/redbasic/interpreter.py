@@ -1,13 +1,11 @@
 import io
 import sys
-import typing
 from . import ast
-from .parser import Parser
-from .lexer import Token
+from .parser import Parser, parse_int
 
 
-number = typing.TypeVar('number', int, float)
 TextIO = io.TextIOBase
+
 
 def builtin_rnd(min:int, max:int=None):
     from random import randint
@@ -78,7 +76,10 @@ class Interpreter:
                 self.setvar(name, value)
             case ast.ExpressionStmt():
                 val = self.eval(stmt.expression)
-                self.setvar(self.TEMP_VAR, val)
+                expr = stmt.expression
+                # se for uma expressão solta, salvar em TEMP_VAR
+                if not isinstance(expr, ast.AssignmentExpr):
+                    self.setvar(self.TEMP_VAR, val)
             case ast.PrintStmt():
                 self.eval_print(stmt)
             case ast.GotoStmt():
@@ -139,9 +140,11 @@ class Interpreter:
     def eval_print(self, printstmt:ast.PrintStmt):
         for item in printstmt.printlist:
             val = self.eval(item.expression)
-            if item.sep == Token.comma:
+            if item.sep == ',':
                 string = f"{val}{' '*8}"
-            elif item.sep == Token.semicolon:
+            elif item.sep == ':':
+                string = f"{val} "
+            elif item.sep == ';' or item.sep is None:
                 string = str(val)
             else:
                 raise SyntaxError(f"Bad print separator '{item.sep}'")
@@ -177,9 +180,22 @@ class Interpreter:
     def eval_input(self, stmt:ast.InputStmt):
         for var in stmt.varlist:
             self.output.write(f"input[{var.name}]> ")
-            line = self.input.readline()
-            expr = self.parser.parse_line(line)
-            value = self.eval(expr)
+            self.output.flush()
+            line = self.input.readline().strip()
+
+            converters = parse_int, float, str
+            value = None
+
+            for conv in  converters:
+                try:
+                    value = conv(line)
+                    break
+                except ValueError:
+                    continue
+
+            if value is None:
+                raise RuntimeError("Bad input")
+            
             self.setvar(var.name, value)
 
 

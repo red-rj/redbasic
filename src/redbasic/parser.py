@@ -56,7 +56,7 @@ class Parser:
     def parse_line(self, code:str):
         self.set_source(code)
         return self.line()
-
+    
     # -----
 
     def program(self):
@@ -126,12 +126,10 @@ class Parser:
                 return self.end_stmt()
             case Token.kw_return:
                 return self.return_stmt()
-            case Token.identifier:
-                # let stmt w/o keyword
-                return self.variable_decl()
             case _:
-                return self.expression_stmt()
-            
+                es = self.expression_stmt()
+                return es
+
     
     def expression_stmt(self):
         e = self.expression()
@@ -211,7 +209,7 @@ class Parser:
         self.eat(Token.kw_run)
         args = None
         try:
-            self.eat(',')
+            self.eat(Token.comma)
             args = self.expression()
         except Exception:
             pass
@@ -276,11 +274,12 @@ class Parser:
         refrigirator = (Token.assignment, Token.assignment_complex)
         for food in refrigirator:
             try:
-                op = self.eat(food)
-                return AssignmentExpr(operator=op, left=check_assignmet_target(left), right=self.assignment_expr())
-            except SyntaxError as e:
-                e.add_note(f"Unexpected token {self.lookahead.token}, expected one of {refrigirator}")
-                raise e
+                node = self.eat(food)
+                return AssignmentExpr(operator=node.value, left=check_assignmet_target(left), right=self.assignment_expr())
+            except SyntaxError:
+                pass
+        
+        raise SyntaxError(f"expected one of {refrigirator}, got {self.lookahead.token}")
     
     # consume only one expression, w/o consuming ','
     single_expression = assignment_expr
@@ -366,7 +365,7 @@ class Parser:
                 return self.paren_expr()
             case Token.identifier:
                 return self.identifier()
-            case Token.eof:
+            case Token.eof | Token.eol:
                 return None
             case 'rnd' | 'usr':
                 return self.builtin_func(self.lookahead.token)
@@ -413,12 +412,19 @@ class Parser:
             expected = self.lookahead.token
         
         node = self.lookahead
+        err = None
         
         if not node and expected != Token.eof:
-            raise SyntaxError(f"Unexpected end of input, {expected=}")
+            err = SyntaxError(f"Unexpected end of input")
         
         if node.token != expected:
-            raise SyntaxError(f"Unexpected token {node.token}, {expected=}")
+            err = SyntaxError(f"Unexpected token")
+
+        if err:
+            err.lineno = self.tokenizer.line
+            err.add_note(f'expected {expected}')
+            err.add_note(f'got {node.token}')
+            raise err
         
         self.lookahead = self.tokenizer.next_token()
         return node
@@ -428,17 +434,4 @@ class Parser:
         while self.lookahead.token == tok:
             self.eat()
 
-    def getloc(self):
-        line = column = 0
-        cur = self.tokenizer.cursor
-
-        for i in range(cur):
-            c = self.string[i]
-            if c == '\n':
-                line += 1
-                column = 0
-            else:
-                column += 1
-            
-        return Location(line, column)
 

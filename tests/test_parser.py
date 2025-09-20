@@ -2,22 +2,30 @@ import unittest
 
 # HACK: fix path and imports
 import pathlib, sys
-sys.path.append(str(pathlib.Path(__file__).absolute().parent.parent))
+sys.path.append(str(pathlib.Path(__file__).absolute().parent.parent/'src'))
 
-from ..src.redbasic.parser import Parser, parse_int, is_keyword
-from ..src.redbasic.lexer import Token
-from ..src.redbasic.ast import *
+from redbasic.parser import Parser, parse_int, is_keyword
+from redbasic.lexer import Token
+from redbasic.ast import *
 
 # --- PARSER TESTS ---
 parser = Parser()
 
 class parserTestCase(unittest.TestCase):
+    def __init__(self, method="runTest"):
+        self.maxDiff = 9999 
+        self.longMessage = False
+        super().__init__(method)
+    
     def assertAst(tc, code:str, expected):
         ast = parser.parse(code)
-        tc.assertEqual(ast, expected, f"""'{code.strip()}' didn't produce the expected ast:
-     {ast=}
-{expected=}""")
-      
+        tc.assertEqual(ast, expected, 
+            f"'{code.strip()}' didn't produce the expected ast\ne={expected}\n!=\na={ast}")
+
+    def assertAstEqual(tc, *codes):
+        asts = tuple( parser.parse(c) for c in codes )
+        tc.assertTrue(all(x == asts[0] for x in asts), f"{codes} are not equivelant")
+    
 class parserHelpers(unittest.TestCase):
     def test_parse_int(tc):
         tc.assertEqual(0o77, parse_int('077'))
@@ -254,17 +262,15 @@ class logicalTests(parserTestCase):
 
 class statmentTests(parserTestCase):
     def test_let_stmt(tc):
-        Ast = parser.parse('let x = 420')
-        expectedAst = Program(body=[Line(statement=VariableDecl(iden=Identifier(name='x'),
-                                        init=IntLiteral(value=420)), linenum=0)])        
-        tc.assertEqual(Ast, expectedAst)
-        
-        Ast = parser.parse('x = 420')
-        tc.assertEqual(Ast, expectedAst)
+        tc.assertAst('let x = 420', Program(body=[Line(statement=VariableDecl(iden=Identifier(name='x'),
+                                        init=IntLiteral(value=420)), linenum=0)]))
+        tc.assertAst('x = 420', Program(body=[Line(statement=ExpressionStmt(expression=AssignmentExpr(operator='=', left=Identifier(name='x'), right=IntLiteral(value=420))), linenum=0)]))
+
 
     def test_list_stmt(tc):
         tc.assertAst('list', Program([Line(ListStmt(None))]))
         tc.assertAst('list 1,5',  Program([Line(ListStmt([IntLiteral(1), IntLiteral(5)]))]))
+        tc.assertAstEqual('list 6,12', 'list 6,12 code')
         tc.assertAst('list 1,5 ast',  Program([Line(ListStmt([IntLiteral(1), IntLiteral(5)], 'ast'))]))
 
 

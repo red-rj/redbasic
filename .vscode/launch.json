@@ -16,13 +16,10 @@
             "name": "redbasic main",
             "type": "debugpy",
             "request": "launch",
-            "program": "main.py",
-            "args": [
-                "-i"
-            ],
+            "program": "-m src.redbasic",
+            "args": "-f Samples/input.bas",
             "console": "integratedTerminal",
-            "justMyCode": true,
-            "cwd": "${workspaceFolder}/src/redbasic"
+            "justMyCode": true
         },
         {
             "name": "redbasic all tests",
