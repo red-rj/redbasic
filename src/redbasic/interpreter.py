@@ -1,9 +1,9 @@
 import io
 import sys
 import typing
-import lang.ast as ast
-from lang.parser import Parser
-from lang.lexer import Token
+from . import ast
+from .parser import Parser
+from .lexer import Token
 
 
 number = typing.TypeVar('number', int, float)

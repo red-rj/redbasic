@@ -1,7 +1,8 @@
 import os, sys, io
 import argparse, pprint
-from redbasic.lang import ast, Parser
-from redbasic.runtime import Interpreter
+from .parser import Parser
+from .interpreter import Interpreter
+from . import ast
 
 
 # baseado nesses cursos

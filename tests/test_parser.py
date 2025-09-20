@@ -1,12 +1,12 @@
 import unittest
 
-# HACK: fix imports
+# HACK: fix path and imports
 import pathlib, sys
 sys.path.append(str(pathlib.Path(__file__).absolute().parent.parent))
 
-from lang.parser import Parser, parse_int, is_keyword
-from lang.lexer import Token
-from lang.ast import *
+from ..src.redbasic.parser import Parser, parse_int, is_keyword
+from ..src.redbasic.lexer import Token
+from ..src.redbasic.ast import *
 
 # --- PARSER TESTS ---
 parser = Parser()
@@ -17,7 +17,7 @@ class parserTestCase(unittest.TestCase):
         tc.assertEqual(ast, expected, f"""'{code.strip()}' didn't produce the expected ast:
      {ast=}
 {expected=}""")
-        
+      
 class parserHelpers(unittest.TestCase):
     def test_parse_int(tc):
         tc.assertEqual(0o77, parse_int('077'))
