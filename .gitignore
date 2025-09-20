@@ -1,4 +1,4 @@
 # stuff to ignore
 get-expected.bas
-*/__pycache__/*
 Referência
+*.pyc

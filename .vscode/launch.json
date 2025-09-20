@@ -6,7 +6,7 @@
     "configurations": [
         {
             "name": "Python: Arquivo Atual",
-            "type": "python",
+            "type": "debugpy",
             "request": "launch",
             "program": "${file}",
             "console": "integratedTerminal",
@@ -14,18 +14,19 @@
         },
         {
             "name": "redbasic main",
-            "type": "python",
+            "type": "debugpy",
             "request": "launch",
             "program": "main.py",
             "args": [
                 "-i"
             ],
             "console": "integratedTerminal",
-            "justMyCode": true
+            "justMyCode": true,
+            "cwd": "${workspaceFolder}/src/redbasic"
         },
         {
             "name": "redbasic all tests",
-            "type": "python",
+            "type": "debugpy",
             "request": "launch",
             "program": "tests/test_parser.py",
             "args": [],
@@ -34,7 +35,7 @@
         },
         {
             "name": "redbasic test specific",
-            "type": "python",
+            "type": "debugpy",
             "request": "launch",
             "program": "test.py",
             "args": [

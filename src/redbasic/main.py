@@ -1,8 +1,8 @@
 import os, sys, io
-import argparse
-import lang.ast as ast
-from lang.parser import Parser
-from runtime.interpreter import Interpreter
+import argparse, pprint
+from redbasic.lang import ast, Parser
+from redbasic.runtime import Interpreter
+
 
 # baseado nesses cursos
 # https://www.udemy.com/share/10416o3@N9X6Bjw-H_pG4ToOt2Ziwam5GYDem5TVH65wxJ4zMRYt0RPOS055QUvpe49AeSIW/
@@ -58,7 +58,8 @@ def main():
     #pprint(ast)
     interp = Interpreter(p)
     interp.exec_program(ast)
-    print(interp.variables)
+    pprint.pp(ast)
+    pprint.pp(interp.variables)
 
 if __name__=='__main__':
     main()
