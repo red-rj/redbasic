@@ -32,6 +32,12 @@ def is_operator(tok:Token):
 def is_keyword(tok:Token):
     return tok in (kw for kw in Token if kw.name.startswith('kw_'))
 
+# TODO: use my own errors
+class BasicSyntaxError(Exception):
+    def __init__(self, msg, line=None):
+        self.msg = msg
+        self.line = line
+
 
 
 class Parser:
@@ -120,6 +126,9 @@ class Parser:
                 return self.end_stmt()
             case Token.kw_return:
                 return self.return_stmt()
+            case Token.identifier:
+                # let stmt w/o keyword
+                return self.variable_decl()
             case _:
                 return self.expression_stmt()
             
@@ -134,7 +143,6 @@ class Parser:
         # print list
         plist = []
         while self.lookahead and self.lookahead.token != 'eol':
-            # expr = self.expression()
             expr = self.single_expression()
             sep = None
             if self.lookahead.token in ',;:':
@@ -142,7 +150,6 @@ class Parser:
             
             plist.append(PrintItem(expr, sep))
 
-        #self.eat('eol')
         return PrintStmt(plist)
 
     def input_stmt(self):
@@ -227,18 +234,18 @@ class Parser:
     
     def builtin_func(self, func):
         name = self.eat(func).value
-        self.eat('(')
+        self.eat(Token.l_paren)
         args = self.sequence_expr()
-        self.eat(')')
+        self.eat(Token.r_paren)
 
         return Func(name.casefold(), args)
     
     def end_stmt(self):
-        self.eat('end')
+        self.eat(Token.kw_end)
         return EndStmt()
     
     def return_stmt(self):
-        self.eat('return')
+        self.eat(Token.kw_return)
         return ReturnStmt()
 
     # EXPRESSIONS
@@ -254,7 +261,7 @@ class Parser:
     # TODO: return ast.SequenceExpr
     def sequence_expr(self):
         exprs = [ self.assignment_expr() ]
-        while self.lookahead.token == ',':
+        while self.lookahead.token == Token.comma:
             self.eat()
             exprs.append(self.assignment_expr())
         
@@ -266,8 +273,14 @@ class Parser:
             return left
         
         # assignment_op
-        op = self.eat_first_of(Token.assignment, Token.assignment_complex).value
-        return AssignmentExpr(operator=op, left=check_assignmet_target(left), right=self.assignment_expr())
+        refrigirator = (Token.assignment, Token.assignment_complex)
+        for food in refrigirator:
+            try:
+                op = self.eat(food)
+                return AssignmentExpr(operator=op, left=check_assignmet_target(left), right=self.assignment_expr())
+            except SyntaxError as e:
+                e.add_note(f"Unexpected token {self.lookahead.token}, expected one of {refrigirator}")
+                raise e
     
     # consume only one expression, w/o consuming ','
     single_expression = assignment_expr
@@ -349,11 +362,11 @@ class Parser:
             return self.literal()
         
         match self.lookahead.token:
-            case '(':
+            case Token.l_paren:
                 return self.paren_expr()
             case Token.identifier:
                 return self.identifier()
-            case 'eof':
+            case Token.eof:
                 return None
             case 'rnd' | 'usr':
                 return self.builtin_func(self.lookahead.token)
@@ -362,9 +375,9 @@ class Parser:
 
 
     def paren_expr(self):
-        self.eat('(')
+        self.eat(Token.l_paren)
         expr = self.expression()
-        self.eat(')')
+        self.eat(Token.r_paren)
         return expr
     
     def identifier(self):
@@ -410,20 +423,6 @@ class Parser:
         self.lookahead = self.tokenizer.next_token()
         return node
 
-    def eat_first_of(self, *validTokens:Token):
-        for t in validTokens:
-            try:
-                return self.eat(t)
-            except SyntaxError:
-                pass
-
-        # no valid tokens found
-        if not self.lookahead and Token.eof not in validTokens:
-            errmsg = f"Unexpected end of input, expected one of {validTokens}"
-        else:
-            errmsg = f"Unexpected token {self.lookahead.token}, expected one of {validTokens}"
-
-        raise SyntaxError(errmsg)
     
     def skip(self, tok:Token):
         while self.lookahead.token == tok:

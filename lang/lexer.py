@@ -179,7 +179,6 @@ class Tokenizer:
             return TokenNode(token, token_value)
         
         raise SyntaxError(f"Unexpected token: '{code[0]}'")
-    
 
     def __iter__(self):
         return self

@@ -25,7 +25,7 @@ def repl(parser:Parser):
             #prog = parser.parse(buffer.getvalue())
             prog = ast.Program(body)
             interp.exec_program(prog)
-        if isinstance(lineast.statement, ast.ClearStmt):
+        elif isinstance(lineast.statement, ast.ClearStmt):
             os.system('cls' if os.name == 'nt' else 'clear')
         
 

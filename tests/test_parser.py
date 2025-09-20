@@ -254,11 +254,13 @@ class logicalTests(parserTestCase):
 
 class statmentTests(parserTestCase):
     def test_let_stmt(tc):
-        tc.assertAst('let x = 420',
-            Program(body=[Line(statement=VariableDecl(iden=Identifier(name='x'),
-                                        init=IntLiteral(value=420)),
-                linenum=0)])
-        )
+        Ast = parser.parse('let x = 420')
+        expectedAst = Program(body=[Line(statement=VariableDecl(iden=Identifier(name='x'),
+                                        init=IntLiteral(value=420)), linenum=0)])        
+        tc.assertEqual(Ast, expectedAst)
+        
+        Ast = parser.parse('x = 420')
+        tc.assertEqual(Ast, expectedAst)
 
     def test_list_stmt(tc):
         tc.assertAst('list', Program([Line(ListStmt(None))]))
