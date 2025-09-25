@@ -32,20 +32,15 @@ def is_operator(tok:Token):
 def is_keyword(tok:Token):
     return tok in (kw for kw in Token if kw.name.startswith('kw_'))
 
-# TODO: use my own errors
-class BasicSyntaxError(Exception):
-    def __init__(self, msg, line=None):
-        self.msg = msg
-        self.line = line
-
-
 
 class Parser:
     def __init__(self):
         self.tokenizer = Tokenizer()
+        self.stack = []
     
     def set_source(self, code:str):
         self.tokenizer.reset(code)
+        self.stack.clear()
         self.lookahead = self.tokenizer.next_token()
  
     def parse(self, textcode:str=None):
@@ -82,21 +77,25 @@ class Parser:
     
     def line_number(self):
         try:
-            #return self.integer().value
-
             # the first number found in a line may or may not be a linenum
             # if it's part of an expression, it's not
-            # TODO: add proper undo/redo
-            prevcursor = self.tokenizer.cursor
-            prevnode = self.lookahead
 
-            num = self.integer().value
-            if not is_operator(self.lookahead.token):
-                return num
+            # prevcursor = self.tokenizer.cursor
+            # prevnode = self.lookahead
+
+            # num = self.integer().value
+            # if not is_operator(self.lookahead.token):
+            #     return num
             
-            self.tokenizer.cursor = prevcursor
-            self.lookahead = prevnode
-            return 0
+            # self.tokenizer.cursor = prevcursor
+            # self.lookahead = prevnode
+
+            n = self.integer().value
+            if not is_operator(self.lookahead.token):
+                return n
+            else:
+                self.undo()
+                return 0
         except SyntaxError:
             return 0
         
@@ -405,6 +404,10 @@ class Parser:
                 return  self.floatingpoint()
             case Token.string_literal:
                 return self.string_literal()
+            case _:
+                e = SyntaxError("Expected literal (int, float, str)")
+                e.add_note(self.lookahead)
+                raise e
 
 
     def eat(self, expected:Token = None):
@@ -426,6 +429,8 @@ class Parser:
             err.add_note(f'got {node.token}')
             raise err
         
+        cursor, line = self.tokenizer.getloc()
+        self.stack.append((self.lookahead, cursor, line))
         self.lookahead = self.tokenizer.next_token()
         return node
 
@@ -434,4 +439,9 @@ class Parser:
         while self.lookahead.token == tok:
             self.eat()
 
-
+    def undo(self):
+        look,cursor,line = self.stack[-1]
+        self.lookahead = look
+        self.tokenizer.cursor = cursor
+        self.tokenizer.line = line
+        self.stack.pop()

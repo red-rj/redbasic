@@ -1,5 +1,5 @@
 import re
-from enum import Enum, StrEnum, auto
+from enum import StrEnum, auto
 from typing import NamedTuple
 
 
@@ -152,10 +152,7 @@ class Tokenizer:
 
     def has_more_tokens(self):
         return self.cursor < len(self.string)
-    
-    def is_eof(self):
-        return self.cursor == len(self.string)
-    
+        
     def next_token(self):
         if not self.has_more_tokens():
             return TokenNode()
@@ -180,14 +177,8 @@ class Tokenizer:
         
         raise SyntaxError(f"Unexpected token: '{code[0]}'")
 
-    def __iter__(self):
-        return self
-    
-    def __next__(self):
-        n = self.next_token()
-        if not n:
-            raise StopIteration
-        return n
+    def getloc(self):
+        return self.cursor, self.line
     
     def __bool__(self):
         return self.has_more_tokens()
