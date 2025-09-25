@@ -1,17 +1,11 @@
 # redbasic AST
 from dataclasses import dataclass, field
-import typing
-
-# TODO: add precise location to AST nodes
-@dataclass
-class Location:
-    line:int
-    column:int
 
 # --- base classes ---
 @dataclass
 class Ast:
     "root of all AST nodes"
+    pass
 
 class Stmt(Ast):
     "base statement type"
@@ -21,17 +15,9 @@ class Expr(Ast):
     "base expression type"
     pass
 
-class EmptyNode:
-    "for stateless nodes"
-    __instance = None
-
-    def __new__(cls):
-        if not cls.__instance:
-            cls.__instance = super().__new__(cls)
-        return cls.__instance
-    
-    def __repr__(self):
-        return f"{self.__class__.__name__}()"
+# Interpreter specific Asts
+class InteractiveStmt(Stmt):
+    pass
 
 # --- expressions ---
 @dataclass
@@ -51,11 +37,9 @@ class AssignmentExpr(BinaryExpr):
     left:Identifier
 
 
-literal_t = typing.Union[int, float, str]
-
 @dataclass
 class Literal(Expr):
-    value:literal_t
+    value:int|float|str
 
 @dataclass
 class IntLiteral(Literal):
@@ -96,12 +80,10 @@ class Line(Stmt):
 class Label(Stmt):
     name:str
 
-content_t = typing.TypeVar('content_t', Line, Label)
-
 @dataclass
 class Program(Stmt):
     "top level program"
-    body:list[content_t]
+    body:list[Line|Label]
 
 @dataclass
 class VariableDecl(Stmt):
@@ -156,8 +138,6 @@ class IfStmt(Stmt):
 class ReturnStmt(Stmt):
     pass
 
-class InteractiveStmt(EmptyNode, Stmt):
-    pass
 
 class ClearStmt(InteractiveStmt):
     pass

@@ -7,7 +7,11 @@ class SyntaxError(BasicError):
     def __init__(self, msg, line=None):
         self.msg = msg
         self.line = line
+        super().__init__(msg, line)
 
 class RuntimeError(BasicError):
-    def __init__(self, msg):
-        self.msg = msg
+    pass
+
+class VarLookupError(RuntimeError):
+    def __init__(self, varname):
+        super().__init__(f'{varname} undefined')

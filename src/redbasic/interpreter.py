@@ -1,6 +1,6 @@
 import io
 import sys
-from . import ast
+from . import ast, error
 from .parser import Parser, parse_int
 
 
@@ -76,9 +76,8 @@ class Interpreter:
                 self.setvar(name, value)
             case ast.ExpressionStmt():
                 val = self.eval(stmt.expression)
-                expr = stmt.expression
                 # se for uma expressão solta, salvar em TEMP_VAR
-                if not isinstance(expr, ast.AssignmentExpr):
+                if not isinstance(stmt.expression, ast.AssignmentExpr):
                     self.setvar(self.TEMP_VAR, val)
             case ast.PrintStmt():
                 self.eval_print(stmt)
