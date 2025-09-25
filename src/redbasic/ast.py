@@ -51,7 +51,7 @@ class AssignmentExpr(BinaryExpr):
     left:Identifier
 
 
-literal_t = typing.TypeVar('literal_t', int, float, str)
+literal_t = typing.Union[int, float, str]
 
 @dataclass
 class Literal(Expr):
