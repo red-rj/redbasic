@@ -1,10 +1,7 @@
-import io
 import sys
+from typing import TextIO as Stream
 from . import ast, error
 from .parser import Parser, parse_int
-
-
-TextIO = io.TextIOBase
 
 
 def builtin_rnd(min:int, max:int=None):
@@ -14,7 +11,7 @@ def builtin_rnd(min:int, max:int=None):
 
     return randint(min, max)
 
-def builtin_usr(out:TextIO, *args):
+def builtin_usr(out:Stream, *args):
     out.write(f"<usr func {args=}\n")
 
 
@@ -24,7 +21,7 @@ class Interpreter:
 
     TEMP_VAR = '_'
 
-    def __init__(self, parser:Parser = None, out:TextIO=sys.stdout, in_:TextIO=sys.stdin):
+    def __init__(self, parser:Parser = None, out:Stream=sys.stdout, in_:Stream=sys.stdin):
         self.parser = parser if parser is not None else Parser()
         self.output = out
         self.input = in_
@@ -60,7 +57,7 @@ class Interpreter:
             elif isinstance(item, ast.Label):
                 self.labels[item.name] = self.idx + 1
             else:
-                raise RuntimeError("Bad Program body")
+                raise error.RuntimeError("Bad Program body")
             
             self.idx += 1
 
@@ -94,7 +91,7 @@ class Interpreter:
             case _:
                 raise NotImplementedError(f"unsupported statement {stmt}")
 
-    def eval(self, expr:ast.Expr) -> ast.literal_t:
+    def eval(self, expr:ast.Expr) -> int|float|str:
         match expr:
             case ast.Literal():
                 return expr.value
@@ -117,18 +114,18 @@ class Interpreter:
 
     def eval_func(self, func:ast.Func):
         if func.name == 'rnd':
-            error = ''
+            errmsg = ''
             args = self.eval(func.arguments)          
 
             if len(func.arguments) > 2:
-                error = "too many arguments"
+                errmsg = "too many arguments"
             elif len(func.arguments) == 0:
-                error = "not enough arguments"
+                errmsg = "not enough arguments"
             elif not all(isinstance(t, (int, float)) for t in args):
-                error = 'invalid argument type'
+                errmsg = 'invalid argument type'
             
-            if error:
-                raise RuntimeError("rnd: "+error)
+            if errmsg:
+                raise error.RuntimeError("rnd: "+errmsg)
             
             return builtin_rnd(*args)
         elif func.name == 'usr':
@@ -146,7 +143,7 @@ class Interpreter:
             elif item.sep == ';' or item.sep is None:
                 string = str(val)
             else:
-                raise SyntaxError(f"Bad print separator '{item.sep}'")
+                raise error.SyntaxError(f"Bad print separator '{item.sep}'", self.idx)
             
             self.output.write(string)
         self.output.write('\n')
@@ -166,7 +163,7 @@ class Interpreter:
         elif isinstance(dest, str):
             self.idx = self.labels[dest]
         else:
-            raise ValueError(f"Unexpected goto arg {dest!r}")
+            raise error.RuntimeError(f"Unexpected goto arg {dest!r}")
 
 
     def eval_if(self, stmt:ast.IfStmt):
@@ -193,7 +190,7 @@ class Interpreter:
                     continue
 
             if value is None:
-                raise RuntimeError("Bad input")
+                raise error.RuntimeError("Bad input")
             
             self.setvar(var.name, value)
 
@@ -225,8 +222,8 @@ class Interpreter:
         return var
                     
     def eval_binary_expr(self, expr:ast.BinaryExpr):
-        lhs = self.eval(expr.left)
         rhs = self.eval(expr.right)
+        lhs = self.eval(expr.left)
 
         match expr.operator:
             case '+':
@@ -238,11 +235,11 @@ class Interpreter:
             case '/':
                 return lhs / rhs
             
-        raise RuntimeError(f"bad binary operator '{expr.operator}'")
+        raise error.RuntimeError(f"bad binary operator '{expr.operator}'")
 
     def eval_logical_expr(self, expr:ast.LogicalExpr):
-        lhs = self.eval(expr.left)
         rhs = self.eval(expr.right)
+        lhs = self.eval(expr.left)
 
         match expr.operator:
             case '||':
@@ -250,7 +247,7 @@ class Interpreter:
             case '&&':
                 return lhs and rhs
             
-        raise RuntimeError(f"bad binary operator '{expr.operator}'")
+        raise error.RuntimeError(f"bad binary operator '{expr.operator}'")
 
 
     def eval_unary_expr(self, expr:ast.UnaryExpr):
@@ -264,7 +261,7 @@ class Interpreter:
             case '!':
                 arg = not arg
             case _:
-                raise RuntimeError(f"bad unary operator '{expr.operator}'")
+                raise error.RuntimeError(f"bad unary operator '{expr.operator}'")
         
         return arg
     
@@ -273,7 +270,7 @@ class Interpreter:
             var = self.variables[name]
             return var
         except KeyError:
-            raise LookupError(f"undefined variable {name}")
+            raise error.VarLookupError(name)
         
     def setvar(self, name:str, value):
         self.variables[name] = value

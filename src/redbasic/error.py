@@ -4,7 +4,7 @@ class BasicError(Exception):
     pass
 
 class SyntaxError(BasicError):
-    def __init__(self, msg, line=None):
+    def __init__(self, msg, line):
         self.msg = msg
         self.line = line
         super().__init__(msg, line)

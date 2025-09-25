@@ -1,6 +1,6 @@
 from .lexer import Token, Tokenizer
 from .ast import *
-
+from . import error
 
 def parse_int(string:str):
     "Helper to handle C style octals"
@@ -12,10 +12,10 @@ def parse_int(string:str):
         return int(string, 0)
 
 
-def check_assignmet_target(e:Expr):
+def check_assignmet_target(e:Expr, line):
     if isinstance(e, Identifier):
         return e
-    raise SyntaxError('Invalid left-hand side in assignment expression')
+    raise error.SyntaxError('Invalid left-hand side in assignment expression', line)
 
 def is_literal(tok:Token):
     return tok == Token.string_literal or tok == Token.floatingpoint or tok == Token.integer
@@ -96,7 +96,7 @@ class Parser:
             else:
                 self.undo()
                 return 0
-        except SyntaxError:
+        except error.SyntaxError:
             return 0
         
     # STATEMENTS
@@ -274,11 +274,12 @@ class Parser:
         for food in refrigirator:
             try:
                 node = self.eat(food)
-                return AssignmentExpr(operator=node.value, left=check_assignmet_target(left), right=self.assignment_expr())
-            except SyntaxError:
+                ln = self.tokenizer.line
+                return AssignmentExpr(operator=node.value, left=check_assignmet_target(left, ln), right=self.assignment_expr())
+            except error.SyntaxError:
                 pass
         
-        raise SyntaxError(f"expected one of {refrigirator}, got {self.lookahead.token}")
+        raise error.SyntaxError(f"expected one of {refrigirator}, got {self.lookahead.token}", self.tokenizer.line)
     
     # consume only one expression, w/o consuming ','
     single_expression = assignment_expr
@@ -369,7 +370,7 @@ class Parser:
             case 'rnd' | 'usr':
                 return self.builtin_func(self.lookahead.token)
             case _:
-                raise ValueError(f"unexpected primary_expr {self.lookahead}")
+                raise self._bad_syntax(f"unexpected primary_expr {self.lookahead}")
 
 
     def paren_expr(self):
@@ -405,7 +406,7 @@ class Parser:
             case Token.string_literal:
                 return self.string_literal()
             case _:
-                e = SyntaxError("Expected literal (int, float, str)")
+                e = self._bad_syntax("Expected literal (int, float, str)")
                 e.add_note(self.lookahead)
                 raise e
 
@@ -415,16 +416,16 @@ class Parser:
             expected = self.lookahead.token
         
         node = self.lookahead
-        err = None
+        errmsg = None
         
         if not node and expected != Token.eof:
-            err = SyntaxError(f"Unexpected end of input")
+            errmsg = "Unexpected end of input"
         
         if node.token != expected:
-            err = SyntaxError(f"Unexpected token")
+            errmsg = "Unexpected token"
 
-        if err:
-            err.lineno = self.tokenizer.line
+        if errmsg:
+            err = self._bad_syntax(errmsg)
             err.add_note(f'expected {expected}')
             err.add_note(f'got {node.token}')
             raise err
@@ -439,9 +440,15 @@ class Parser:
         while self.lookahead.token == tok:
             self.eat()
 
-    def undo(self):
-        look,cursor,line = self.stack[-1]
-        self.lookahead = look
-        self.tokenizer.cursor = cursor
-        self.tokenizer.line = line
-        self.stack.pop()
+    def undo(self, n=1):
+        assert len(self.stack) >= n
+        while n:
+            look,cursor,line = self.stack[-1]
+            self.lookahead = look
+            self.tokenizer.cursor = cursor
+            self.tokenizer.line = line
+            self.stack.pop()
+            n -= 1
+
+    def _bad_syntax(self, msg):
+        return error.SyntaxError(msg, self.tokenizer.line)
