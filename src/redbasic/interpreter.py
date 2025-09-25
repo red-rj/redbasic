@@ -114,20 +114,14 @@ class Interpreter:
 
     def eval_func(self, func:ast.Func):
         if func.name == 'rnd':
-            errmsg = ''
-            args = self.eval(func.arguments)          
+            args = self.eval(func.arguments)
 
-            if len(func.arguments) > 2:
-                errmsg = "too many arguments"
-            elif len(func.arguments) == 0:
-                errmsg = "not enough arguments"
-            elif not all(isinstance(t, (int, float)) for t in args):
-                errmsg = 'invalid argument type'
+            try:
+                n = builtin_rnd(*args)
+                return n
+            except Exception as e:
+                raise error.RuntimeError('rnd: '+str(e))
             
-            if errmsg:
-                raise error.RuntimeError("rnd: "+errmsg)
-            
-            return builtin_rnd(*args)
         elif func.name == 'usr':
             args = self.eval(func.arguments)
             builtin_usr(self.output, *args)
@@ -175,8 +169,6 @@ class Interpreter:
 
     def eval_input(self, stmt:ast.InputStmt):
         for var in stmt.varlist:
-            self.output.write(f"input[{var.name}]> ")
-            self.output.flush()
             line = self.input.readline().strip()
 
             converters = parse_int, float, str
