@@ -158,7 +158,8 @@ def reconstruct_expr(expr, ss:TextIO):
             for e in expr:
                 reconstruct_expr(e, ss)
                 ss.write(',')
-            ss.seek(-1, io.SEEK_CUR) # remove last ,
+            pos = ss.tell()
+            ss.seek(pos-1) # remove last ,
         case Identifier():
             ss.write(expr.name)
         case Func():
@@ -182,6 +183,7 @@ def reconstruct_expr(expr, ss:TextIO):
 
 
 def reconstruct(program:Program):
+    "reconstruct an aproximation of source code from an AST tree"
     ss = io.StringIO()
     recon = lambda e: reconstruct_expr(e, ss)
 
@@ -191,7 +193,7 @@ def reconstruct(program:Program):
                 ss.write(f'{a.name}:')
             case Line():
                 stmt = a.statement
-                ss.write(f'{a.linenum:<3d} ')
+                ss.write(f'{a.linenum:<4d} ')
                 match stmt:
                     case PrintStmt():
                         ss.write('print ')
@@ -209,7 +211,9 @@ def reconstruct(program:Program):
                         ss.write("gosub ")
                         recon(stmt.destination)
                     case VariableDecl():
+                        ss.write('let ')
                         recon(stmt.iden)
+                        ss.write('=')
                         recon(stmt.init)
                     case IfStmt():
                         ss.write('if ')
