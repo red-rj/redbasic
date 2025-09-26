@@ -17,7 +17,7 @@
             "type": "debugpy",
             "request": "launch",
             "program": "-m src.redbasic",
-            "args": "-f Samples/input.bas",
+            "args": "-i",
             "console": "integratedTerminal",
             "justMyCode": true
         },

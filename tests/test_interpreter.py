@@ -30,6 +30,12 @@ class Test(unittest.TestCase):
 
     def openScript(self, name):
         return open(self.testdir/name, 'r', encoding='utf-8')
+    
+    def execScript(self, script):
+        with open(self.testdir/script, encoding='utf-8') as f:
+            code = f.read()
+            self.interp.set_source(code)
+            self.interp.exec()
 
 
 class ScriptTests(Test):
@@ -48,11 +54,6 @@ class ScriptTests(Test):
 
     def test_read_sum_ints(tc):
         tc.setInput(35)
-        
-        with tc.openScript("sum-ints.bas") as f:
-            code = f.read()
-            tc.interp.set_source(code)
-            tc.interp.exec()
-        
+        tc.execScript("sum-ints.bas")
         tc.assertEqual("Result = 69\n", tc.output.getvalue())
         tc.assertEqual(tc.interp.variables["result"], 69)

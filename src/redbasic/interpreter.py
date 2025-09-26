@@ -91,7 +91,7 @@ class Interpreter:
             case _:
                 raise NotImplementedError(f"unsupported statement {stmt}")
 
-    def eval(self, expr:ast.Expr) -> int|float|str:
+    def eval(self, expr:ast.Expr) -> int|float|str|list:
         match expr:
             case ast.Literal():
                 return expr.value
@@ -132,8 +132,6 @@ class Interpreter:
             val = self.eval(item.expression)
             if item.sep == ',':
                 string = f"{val}{' '*8}"
-            elif item.sep == ':':
-                string = f"{val} "
             elif item.sep == ';' or item.sep is None:
                 string = str(val)
             else:
