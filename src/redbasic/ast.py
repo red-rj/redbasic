@@ -1,8 +1,9 @@
 # redbasic AST
-from dataclasses import dataclass, field
+import io
+from dataclasses import dataclass
+from typing import TextIO
 
 # --- base classes ---
-@dataclass
 class Ast:
     "root of all AST nodes"
     pass
@@ -116,11 +117,6 @@ class GotoStmt(Stmt):
 class GosubStmt(GotoStmt):
     pass
 
-@dataclass
-class VariableDecl(Stmt):
-    iden:Identifier
-    init:Expr
-
 # @dataclass
 # class LetStmt(Stmt):
 #     declarations:list[VariableDecl]
@@ -154,3 +150,89 @@ class ListStmt(Stmt):
     arguments:list[Expr]
     mode:str = 'code'
 
+# reconstruct util
+
+def reconstruct_expr(expr, ss:TextIO):
+    match expr:
+        case list(): #TODO: SequenceExpr
+            for e in expr:
+                reconstruct_expr(e, ss)
+                ss.write(',')
+            ss.seek(-1, io.SEEK_CUR) # remove last ,
+        case Identifier():
+            ss.write(expr.name)
+        case Func():
+            ss.write(f'{expr.name}(')
+            reconstruct_expr(expr.arguments, ss)
+            ss.write(')')
+        case Literal():
+            if isinstance(expr.value, str):
+                ss.write(f'"{expr.value}"')
+            else:
+                ss.write(f'{expr.value}')
+        case UnaryExpr():
+            ss.write(expr.operator)
+            reconstruct_expr(expr.argument, ss)
+        case BinaryExpr():
+            reconstruct_expr(expr.left, ss)
+            ss.write(expr.operator)
+            reconstruct_expr(expr.right, ss)
+        case _:
+            raise RuntimeError(f"cannot recontruct {expr!r}")
+
+
+def reconstruct(program:Program):
+    ss = io.StringIO()
+    recon = lambda e: reconstruct_expr(e, ss)
+
+    for a in program.body:
+        match a:
+            case Label():
+                ss.write(f'{a.name}:')
+            case Line():
+                stmt = a.statement
+                ss.write(f'{a.linenum:<3d} ')
+                match stmt:
+                    case PrintStmt():
+                        ss.write('print ')
+                        for pi in stmt.printlist:
+                            recon(pi.expression)
+                            if pi.sep:
+                                ss.write(pi.sep)
+                    case InputStmt():
+                        ss.write("input ")
+                        recon(stmt.varlist)
+                    case GotoStmt():
+                        ss.write("goto ")
+                        recon(stmt.destination)
+                    case GosubStmt():
+                        ss.write("gosub ")
+                        recon(stmt.destination)
+                    case VariableDecl():
+                        recon(stmt.iden)
+                        recon(stmt.init)
+                    case IfStmt():
+                        ss.write('if ')
+                        recon(stmt.test)
+                        ss.write(' then')
+                        if stmt.alternate:
+                            ss.write(' else ')
+                            recon(stmt.alternate)
+                    case ExpressionStmt():
+                        recon(stmt.expression)
+                    case ReturnStmt():
+                        ss.write('return')
+                    case ClearStmt():
+                        ss.write('clear')
+                    case EndStmt():
+                        ss.write('end')
+                    case RunStmt():
+                        ss.write('run')
+                    case ListStmt():
+                        ss.write('list ')
+                        recon(stmt.arguments)
+                        ss.write(stmt.mode)
+                    case _:
+                        raise RuntimeError(f"cannot recontruct {stmt!r}")
+        ss.write('\n')
+    return ss.getvalue()

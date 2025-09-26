@@ -142,7 +142,7 @@ class Parser:
         while self.lookahead and self.lookahead.token != 'eol':
             expr = self.single_expression()
             sep = None
-            if self.lookahead.token in ',;:':
+            if self.lookahead.token in ',;':
                 sep = self.eat().value
             
             plist.append(PrintItem(expr, sep))
@@ -256,7 +256,7 @@ class Parser:
             
     
     # TODO: return ast.SequenceExpr
-    def sequence_expr(self):
+    def sequence_expr(self) -> list[AssignmentExpr|LogicalExpr]:
         exprs = [ self.assignment_expr() ]
         while self.lookahead.token == Token.comma:
             self.eat()
@@ -264,7 +264,7 @@ class Parser:
         
         return exprs
     
-    def assignment_expr(self):
+    def assignment_expr(self) -> AssignmentExpr|LogicalExpr:
         left = self.logical_or_expr()
         if not is_assignment_op(self.lookahead.token):
             return left

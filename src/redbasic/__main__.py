@@ -1,7 +1,7 @@
-import os, sys, io
+import os, sys
 import argparse
-from . import ast, Parser, Interpreter
 import pprint
+from . import ast, Parser, Interpreter
 
 # baseado nesses cursos
 # https://www.udemy.com/share/10416o3@N9X6Bjw-H_pG4ToOt2Ziwam5GYDem5TVH65wxJ4zMRYt0RPOS055QUvpe49AeSIW/
@@ -9,23 +9,43 @@ import pprint
 
 def repl(parser:Parser):
     interp = Interpreter(parser)
-    print("redbasic REPL v0.0")
-    buffer = io.StringIO()
-    body = []
+    print("redbasic REPL v0.1")
+    print("Ctrl+C to exit")
+    prog = ast.Program([])
+    body = prog.body
 
     while 1:
         code = input("> ")
-        buffer.write(code + '\n')
-
         lineast = parser.parse_line(code)
-        body.append(lineast)
 
-        if isinstance(lineast.statement, ast.RunStmt):
-            #prog = parser.parse(buffer.getvalue())
-            prog = ast.Program(body)
-            interp.exec_program(prog)
-        elif isinstance(lineast.statement, ast.ClearStmt):
-            os.system('cls' if os.name == 'nt' else 'clear')
+        if isinstance(lineast, ast.Line):
+            stmt = lineast.statement
+            if isinstance(stmt, ast.RunStmt):
+                interp.ast = prog
+                interp.exec()
+            elif isinstance(stmt, ast.ClearStmt):
+                os.system('cls' if os.name == 'nt' else 'clear')
+            elif isinstance(stmt, ast.ListStmt):
+                interp.ast = prog
+                args = stmt.arguments
+                limits = interp.eval(args) if args else None
+                # TODO: respect limit arguments
+                if stmt.mode == 'code':
+                    src = ast.reconstruct(interp.ast)
+                    print(src)
+                elif stmt.mode == 'ast':
+                    pprint.pp(interp.ast)
+            else:
+                if lineast.linenum:
+                    numbered_lines = enumerate(body)
+                    numbered_lines = [e for e in numbered_lines if isinstance(e[1], ast.Line)]
+                    for i, a in numbered_lines:
+                        if a.linenum == lineast.linenum:
+                            # replace line
+                            body[i] = lineast
+        elif isinstance(lineast, ast.Label):
+            pass
+        body.append(lineast)
         
 
 def main():
