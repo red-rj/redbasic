@@ -69,6 +69,7 @@ class Func(Expr):
     arguments:list[Expr]
 
 # --- statements ---
+# TODO: maybe unite Line and Label, linenum of label can be hash(name)?
 @dataclass
 class Line(Stmt):
     """ A line of BASIC code.
@@ -78,7 +79,7 @@ class Line(Stmt):
     linenum:int = 0
 
 @dataclass
-class Label(Stmt):
+class Label(Line):
     name:str
 
 @dataclass
@@ -219,6 +220,7 @@ def reconstruct(program:Program):
                         ss.write('if ')
                         recon(stmt.test)
                         ss.write(' then')
+                        recon(stmt.consequent)
                         if stmt.alternate:
                             ss.write(' else ')
                             recon(stmt.alternate)

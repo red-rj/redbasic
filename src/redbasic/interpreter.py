@@ -12,7 +12,7 @@ def builtin_rnd(min:int, max:int=None):
     return randint(min, max)
 
 def builtin_usr(out:Stream, *args):
-    out.write(f"<usr func {args=}\n")
+    raise NotImplementedError("USR func")
 
 
 
@@ -30,6 +30,7 @@ class Interpreter:
         self.variables = {}
         self.labels:dict[str,int] = {}
         self.ast:ast.Program = None
+        self.substack = []
 
     
     def add_line(self, astLine:str):
@@ -64,6 +65,8 @@ class Interpreter:
             
     def exec(self):
         self.exec_program(self.ast)
+
+    # ---
 
     def exec_statement(self, stmt:ast.Stmt):
         match stmt:
@@ -140,22 +143,36 @@ class Interpreter:
             self.output.write(string)
         self.output.write('\n')
 
+    def _calc_go(self, dest):
+        if isinstance(dest, int):
+            indexedbody = ( x for x in enumerate(self.ast.body) if hasattr(x[1], 'linenum') )
+            theresult = [x[0] for x in indexedbody if x[1].linenum==dest][0]
+            return theresult
+        if isinstance(dest, str):
+            return self.labels[dest]
+        
+        raise error.RuntimeError(f"Unexpected destination {dest!r}")
+
 
     def eval_goto(self, goto:ast.GotoStmt):
         dest = self.eval(goto.destination)
+        newidx = self._calc_go(dest)
+        self.idx = newidx
 
-        if isinstance(dest, int):
-            for i, line in enumerate(self.ast.body):
-                if isinstance(line, ast.Label):
-                    continue
+    def _gosub(self, gosub:ast.GosubStmt):
+        dest = self.eval(gosub.destination)
+        pos = self.idx+1
+        self.substack.append(pos)
+        if len(self.substack) > 1024:
+            raise RuntimeError("recursion limit")
 
-                if line.linenum == dest:
-                    self.idx = i
-                    break
-        elif isinstance(dest, str):
-            self.idx = self.labels[dest]
-        else:
-            raise error.RuntimeError(f"Unexpected goto arg {dest!r}")
+        newidx = self._calc_go(dest)
+        self.idx = newidx
+
+    def _return(self):
+        pos = self.substack[-1]
+        self.substack.pop()
+        self.idx = pos
 
 
     def eval_if(self, stmt:ast.IfStmt):
