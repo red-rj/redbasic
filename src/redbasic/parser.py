@@ -68,7 +68,7 @@ class Parser:
             except Exception:
                 pass
 
-            return Label(stmt, hash(name), name)
+            return Label(stmt, name[:-1])
         
         linenum = self.line_number()
         stmt = self.statement()

@@ -69,23 +69,31 @@ class Func(Expr):
     arguments:list[Expr]
 
 # --- statements ---
-# TODO: maybe unite Line and Label, linenum of label can be hash(name)?
 @dataclass
 class Line(Stmt):
-    """ A line of BASIC code.
-    Ex: '10 print "Hello World!"' OR 'goto 10'
+    """
+    A line of BASIC code.
+        10 print "Hello World!"
+        goto 10
     """
     statement:Stmt
     linenum:int = 0
 
 @dataclass
 class Label(Line):
-    name:str
+    """
+    A named line
+        name: input A
+    """
+
+    def __init__(self, statement:Stmt, name:str):
+        self.name = name
+        super().__init__(statement, hash(name))
 
 @dataclass
 class Program(Stmt):
     "top level program"
-    body:list[Line|Label]
+    body:list[Line]
 
 @dataclass
 class VariableDecl(Stmt):
@@ -189,56 +197,56 @@ def reconstruct(program:Program):
     recon = lambda e: reconstruct_expr(e, ss)
 
     for a in program.body:
-        match a:
-            case Label():
-                ss.write(f'{a.name}:')
-            case Line():
-                stmt = a.statement
-                ss.write(f'{a.linenum:<4d} ')
-                match stmt:
-                    case PrintStmt():
-                        ss.write('print ')
-                        for pi in stmt.printlist:
-                            recon(pi.expression)
-                            if pi.sep:
-                                ss.write(pi.sep)
-                    case InputStmt():
-                        ss.write("input ")
-                        recon(stmt.varlist)
-                    case GotoStmt():
-                        ss.write("goto ")
-                        recon(stmt.destination)
-                    case GosubStmt():
-                        ss.write("gosub ")
-                        recon(stmt.destination)
-                    case VariableDecl():
-                        ss.write('let ')
-                        recon(stmt.iden)
-                        ss.write('=')
-                        recon(stmt.init)
-                    case IfStmt():
-                        ss.write('if ')
-                        recon(stmt.test)
-                        ss.write(' then')
-                        recon(stmt.consequent)
-                        if stmt.alternate:
-                            ss.write(' else ')
-                            recon(stmt.alternate)
-                    case ExpressionStmt():
-                        recon(stmt.expression)
-                    case ReturnStmt():
-                        ss.write('return')
-                    case ClearStmt():
-                        ss.write('clear')
-                    case EndStmt():
-                        ss.write('end')
-                    case RunStmt():
-                        ss.write('run')
-                    case ListStmt():
-                        ss.write('list ')
-                        recon(stmt.arguments)
-                        ss.write(stmt.mode)
-                    case _:
-                        raise RuntimeError(f"cannot recontruct {stmt!r}")
+        stmt = a.statement
+        if isinstance(a, Label):
+            ss.write(f'{a.name}: ')
+        else:
+            ss.write(f'{a.linenum:<4d} ')
+
+        match stmt:
+            case PrintStmt():
+                ss.write('print ')
+                for pi in stmt.printlist:
+                    recon(pi.expression)
+                    if pi.sep:
+                        ss.write(pi.sep)
+            case InputStmt():
+                ss.write("input ")
+                recon(stmt.varlist)
+            case GotoStmt():
+                ss.write("goto ")
+                recon(stmt.destination)
+            case GosubStmt():
+                ss.write("gosub ")
+                recon(stmt.destination)
+            case VariableDecl():
+                ss.write('let ')
+                recon(stmt.iden)
+                ss.write('=')
+                recon(stmt.init)
+            case IfStmt():
+                ss.write('if ')
+                recon(stmt.test)
+                ss.write(' then')
+                recon(stmt.consequent)
+                if stmt.alternate:
+                    ss.write(' else ')
+                    recon(stmt.alternate)
+            case ExpressionStmt():
+                recon(stmt.expression)
+            case ReturnStmt():
+                ss.write('return')
+            case ClearStmt():
+                ss.write('clear')
+            case EndStmt():
+                ss.write('end')
+            case RunStmt():
+                ss.write('run')
+            case ListStmt():
+                ss.write('list ')
+                recon(stmt.arguments)
+                ss.write(stmt.mode)
+            case _:
+                raise RuntimeError(f"cannot recontruct {stmt!r}")
         ss.write('\n')
     return ss.getvalue()
