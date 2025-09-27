@@ -60,14 +60,21 @@ class Parser:
     def line(self):
         self.skip('eol')
         if self.lookahead.token == Token.named_label:
-            return self.label()
+            _, name = self.eat()
+            # statements are optional in labels
+            stmt = None
+            try:
+                stmt = self.statement()
+            except Exception:
+                pass
+
+            return Label(stmt, hash(name), name)
         
         linenum = self.line_number()
         stmt = self.statement()
         self.skip('eol')
         return Line(stmt, linenum)
 
-    
     def line_list(self):
         lines = []
         while self.lookahead:
@@ -79,17 +86,6 @@ class Parser:
         try:
             # the first number found in a line may or may not be a linenum
             # if it's part of an expression, it's not
-
-            # prevcursor = self.tokenizer.cursor
-            # prevnode = self.lookahead
-
-            # num = self.integer().value
-            # if not is_operator(self.lookahead.token):
-            #     return num
-            
-            # self.tokenizer.cursor = prevcursor
-            # self.lookahead = prevnode
-
             n = self.integer().value
             if not is_operator(self.lookahead.token):
                 return n
@@ -126,8 +122,7 @@ class Parser:
             case Token.kw_return:
                 return self.return_stmt()
             case _:
-                es = self.expression_stmt()
-                return es
+                return self.expression_stmt()
 
     
     def expression_stmt(self):
@@ -225,9 +220,6 @@ class Parser:
 
         return ListStmt(args, mode)
     
-    def label(self):
-        _, name = self.eat(Token.named_label)
-        return Label(name[:-1])
     
     def builtin_func(self, func):
         name = self.eat(func).value
