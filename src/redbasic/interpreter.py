@@ -36,22 +36,21 @@ class Interpreter:
     def set_source(self, code:str):
         self.ast = self.parser.parse(code)
 
+    def exec_line(self, line:ast.Line):
+        self.exec_statement(line.statement)
 
     def exec_program(self, prog:ast.Program):
         self.ast = prog
         self.allkeys = [ x.linenum for x in self.ast.body ]
         maxcursor = len(self.allkeys)
 
-        while self.cursor > maxcursor:
+        while self.cursor < maxcursor:
             item = self.ast.body[self.cursor]
             self.exec_statement(item.statement)
             self.cursor += 1
 
-            
     def exec(self):
         self.exec_program(self.ast)
-
-    # ---
 
     def exec_statement(self, stmt:ast.Stmt):
         match stmt:
@@ -71,7 +70,7 @@ class Interpreter:
             case ast.GosubStmt():
                 self._gosub(stmt)
             case ast.EndStmt():
-                self.cursor = 0x7fffffff
+                self.cursor = 2**31
             case ast.IfStmt():
                 self.eval_if(stmt)
             case ast.InputStmt():
@@ -113,7 +112,7 @@ class Interpreter:
                 n = builtin_rnd(*args)
                 return n
             except Exception as e:
-                raise error.RuntimeError('rnd: '+str(e))
+                raise RuntimeError('rnd: '+str(e))
             
         elif func.name == 'usr':
             args = self.eval(func.arguments)
@@ -128,7 +127,7 @@ class Interpreter:
             elif item.sep == ';' or item.sep is None:
                 string = str(val)
             else:
-                raise error.SyntaxError(f"Bad print separator '{item.sep}'", self.cursor)
+                raise error.BadSyntax(f"Bad print separator '{item.sep}'", self.cursor)
             
             self.output.write(string)
         self.output.write('\n')
@@ -141,7 +140,7 @@ class Interpreter:
         try:        
             return self.allkeys.index(dest)
         except ValueError:
-            raise error.RuntimeError(f"Unexpected destination {dest!r}")
+            raise error.Err(f"Unexpected destination {dest!r}")
 
 
     def eval_goto(self, goto:ast.GotoStmt):
@@ -186,7 +185,7 @@ class Interpreter:
                     continue
 
             if value is None:
-                raise error.RuntimeError("Bad input")
+                raise RuntimeError("Bad input")
             
             self.setvar(var.name, value)
 
@@ -231,7 +230,7 @@ class Interpreter:
             case '/':
                 return lhs / rhs
             
-        raise error.RuntimeError(f"bad binary operator '{expr.operator}'")
+        raise RuntimeError(f"bad binary operator '{expr.operator}'")
 
     def eval_logical_expr(self, expr:ast.LogicalExpr):
         rhs = self.eval(expr.right)
@@ -243,7 +242,7 @@ class Interpreter:
             case '&&':
                 return lhs and rhs
             
-        raise error.RuntimeError(f"bad binary operator '{expr.operator}'")
+        raise RuntimeError(f"bad binary operator '{expr.operator}'")
 
 
     def eval_unary_expr(self, expr:ast.UnaryExpr):
@@ -257,7 +256,7 @@ class Interpreter:
             case '!':
                 arg = not arg
             case _:
-                raise error.RuntimeError(f"bad unary operator '{expr.operator}'")
+                raise RuntimeError(f"bad unary operator '{expr.operator}'")
         
         return arg
     
@@ -266,7 +265,7 @@ class Interpreter:
             var = self.variables[name]
             return var
         except KeyError:
-            raise error.VarLookupError(name)
+            raise error.UndefinedVar(name)
         
     def setvar(self, name:str, value):
         self.variables[name] = value

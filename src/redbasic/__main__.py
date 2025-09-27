@@ -35,8 +35,8 @@ def repl(parser:Parser, prog:ast.Program):
                 elif stmt.mode == 'ast':
                     pprint.pp(interp.ast)
             else:
+                replaced = False
                 if lineast.linenum:
-                    replaced = False
                     numbered_lines = enumerate(body)
                     numbered_lines = [e for e in numbered_lines if isinstance(e[1], ast.Line)]
                     for i, a in numbered_lines:
@@ -45,8 +45,13 @@ def repl(parser:Parser, prog:ast.Program):
                             body[i] = lineast
                             replaced = True
                             break
-                if not replaced:
+                # in repl mode, append only if there's a line number
+                # else execute
+                if not replaced and lineast.linenum:
                     body.append(lineast)
+                else:
+                    interp.exec_line(lineast)
+
         elif isinstance(lineast, ast.Label):
             body.append(lineast)
 

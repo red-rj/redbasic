@@ -337,13 +337,13 @@ class labelTests(parserTestCase):
             name:
             let i = 1
             """,
-            Program(body=[Label(name='name'), Line(statement=VariableDecl(iden=Identifier(name='i'), init=IntLiteral(value=1)), linenum=0)])
+            Program(body=[Label(None, name='name'), Line(statement=VariableDecl(iden=Identifier(name='i'), init=IntLiteral(value=1)), linenum=0)])
         )
         tc.assertAst(
             """
             name: let i = 1
             """,
-            Program(body=[Label(name='name'), Line(statement=VariableDecl(iden=Identifier(name='i'), init=IntLiteral(value=1)), linenum=0)])
+            Program(body=[Label(VariableDecl(Identifier("i"), IntLiteral(1)), name='name')])
         )
     
 class functionTests(parserTestCase):

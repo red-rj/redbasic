@@ -1,17 +1,13 @@
 # TODO: use my own errors
 
-class BasicError(Exception):
-    pass
-
-class SyntaxError(BasicError):
+class BadSyntax(SyntaxError):
     def __init__(self, msg, line):
         self.msg = msg
-        self.line = line
-        super().__init__(msg, line)
+        self.lineno = line
+        super().__init__(msg)
 
-class RuntimeError(BasicError):
-    pass
-
-class VarLookupError(RuntimeError):
+class UndefinedVar(NameError):
     def __init__(self, varname):
-        super().__init__(f'{varname} undefined')
+        super().__init__(f'{varname} is undefined')
+
+Err = Exception

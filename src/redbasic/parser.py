@@ -12,11 +12,6 @@ def parse_int(string:str):
         return int(string, 0)
 
 
-def check_assignmet_target(e:Expr, line):
-    if isinstance(e, Identifier):
-        return e
-    raise error.SyntaxError('Invalid left-hand side in assignment expression', line)
-
 def is_literal(tok:Token):
     return tok == Token.string_literal or tok == Token.floatingpoint or tok == Token.integer
 
@@ -68,6 +63,7 @@ class Parser:
             except Exception:
                 pass
 
+            self.skip(Token.eol)
             return Label(stmt, name[:-1])
         
         linenum = self.line_number()
@@ -92,7 +88,7 @@ class Parser:
             else:
                 self.undo()
                 return 0
-        except error.SyntaxError:
+        except error.BadSyntax:
             return 0
         
     # STATEMENTS
@@ -122,7 +118,11 @@ class Parser:
             case Token.kw_return:
                 return self.return_stmt()
             case _:
-                return self.expression_stmt()
+                e = self.expression_stmt()
+                if e.expression is None:
+                    return None
+                else:
+                    return e
 
     
     def expression_stmt(self):
@@ -265,13 +265,14 @@ class Parser:
         for food in refrigirator:
             try:
                 node = self.eat(food)
-                ln = self.tokenizer.line
-                return AssignmentExpr(operator=node.value, left=check_assignmet_target(left, ln), right=self.assignment_expr())
-            except error.SyntaxError:
+                if not isinstance(left, Identifier):
+                    raise self._bad_syntax('Invalid left-hand side in assignment expression')
+                return AssignmentExpr(operator=node.value, left=left, right=self.assignment_expr())
+            except error.BadSyntax:
                 pass
         
-        raise error.SyntaxError(f"expected one of {refrigirator}, got {self.lookahead.token}", self.tokenizer.line)
-    
+        raise self._bad_syntax(f"expected one of {refrigirator}, got {self.lookahead.token}")
+
     # consume only one expression, w/o consuming ','
     single_expression = assignment_expr
 
@@ -442,4 +443,4 @@ class Parser:
             n -= 1
 
     def _bad_syntax(self, msg):
-        return error.SyntaxError(msg, self.tokenizer.line)
+        return error.BadSyntax(msg, self.tokenizer.line)

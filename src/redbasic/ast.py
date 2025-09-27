@@ -20,6 +20,14 @@ class Expr(Ast):
 class InteractiveStmt(Stmt):
     pass
 
+class Empty:
+    __instance = None
+
+    def __new__(cls):
+        if cls.__instance is None:
+            cls.__instance = super().__new__(cls)
+        return cls.__instance
+
 # --- expressions ---
 @dataclass
 class Identifier(Expr):
@@ -140,14 +148,13 @@ class IfStmt(Stmt):
     consequent:Stmt
     alternate:Stmt
 
-class ReturnStmt(Stmt):
+class ReturnStmt(Empty, Stmt):
     pass
 
-
-class ClearStmt(InteractiveStmt):
+class ClearStmt(Empty, InteractiveStmt):
     pass
 
-class EndStmt(InteractiveStmt):
+class EndStmt(Empty, InteractiveStmt):
     pass
 
 @dataclass
