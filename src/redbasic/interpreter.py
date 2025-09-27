@@ -16,6 +16,7 @@ def builtin_usr(out:Stream, *args):
 
 
 
+
 class Interpreter:
     "Redbasic interpreter"
 
@@ -25,21 +26,12 @@ class Interpreter:
         self.parser = parser if parser is not None else Parser()
         self.output = out
         self.input = in_
-        self.idx = 0
-        self.cur_linenum = 0
         self.variables = {}
-        self.labels:dict[str,int] = {}
-        self.ast:ast.Program = None
         self.substack = []
+        self.ast:ast.Program = None
+        self.allkeys = None
+        self.cursor = 0
 
-    
-    def add_line(self, astLine:str):
-        tp = Parser()
-        l = tp.parse_line(astLine)
-        if self.ast:
-            self.ast.body.append(l)
-        else:
-            self.ast = ast.Program([l])
 
     def set_source(self, code:str):
         self.ast = self.parser.parse(code)
@@ -47,20 +39,13 @@ class Interpreter:
 
     def exec_program(self, prog:ast.Program):
         self.ast = prog
-        maxidx = len(prog.body)
-        
-        while self.idx < maxidx:
-            item = prog.body[self.idx]
+        self.allkeys = [ x.linenum for x in self.ast.body ]
+        maxcursor = len(self.allkeys)
 
-            if isinstance(item, ast.Line):
-                self.cur_linenum = item.linenum
-                self.exec_statement(item.statement)
-            elif isinstance(item, ast.Label):
-                self.labels[item.name] = self.idx + 1
-            else:
-                raise error.RuntimeError("Bad Program body")
-            
-            self.idx += 1
+        while self.cursor > maxcursor:
+            item = self.ast.body[self.cursor]
+            self.exec_statement(item.statement)
+            self.cursor += 1
 
             
     def exec(self):
@@ -83,16 +68,21 @@ class Interpreter:
                 self.eval_print(stmt)
             case ast.GotoStmt():
                 self.eval_goto(stmt)
+            case ast.GosubStmt():
+                self._gosub(stmt)
             case ast.EndStmt():
-                self.idx = float('inf')
+                self.cursor = 0x7fffffff
             case ast.IfStmt():
                 self.eval_if(stmt)
             case ast.InputStmt():
                 self.eval_input(stmt)
             case ast.InteractiveStmt():
                 pass
+            case ast.ReturnStmt():
+                self._return()
             case _:
                 raise NotImplementedError(f"unsupported statement {stmt}")
+
 
     def eval(self, expr:ast.Expr) -> int|float|str|list:
         match expr:
@@ -134,45 +124,44 @@ class Interpreter:
         for item in printstmt.printlist:
             val = self.eval(item.expression)
             if item.sep == ',':
-                string = f"{val}{' '*8}"
+                string = f"{val:<8}"
             elif item.sep == ';' or item.sep is None:
                 string = str(val)
             else:
-                raise error.SyntaxError(f"Bad print separator '{item.sep}'", self.idx)
+                raise error.SyntaxError(f"Bad print separator '{item.sep}'", self.cursor)
             
             self.output.write(string)
         self.output.write('\n')
 
     def _calc_go(self, dest):
-        if isinstance(dest, int):
-            indexedbody = ( x for x in enumerate(self.ast.body) if hasattr(x[1], 'linenum') )
-            theresult = [x[0] for x in indexedbody if x[1].linenum==dest][0]
-            return theresult
+        "returns next cursor"
         if isinstance(dest, str):
-            return self.labels[dest]
-        
-        raise error.RuntimeError(f"Unexpected destination {dest!r}")
+            dest = hash(dest)
+
+        try:        
+            return self.allkeys.index(dest)
+        except ValueError:
+            raise error.RuntimeError(f"Unexpected destination {dest!r}")
 
 
     def eval_goto(self, goto:ast.GotoStmt):
         dest = self.eval(goto.destination)
         newidx = self._calc_go(dest)
-        self.idx = newidx
+        self.cursor = newidx
 
     def _gosub(self, gosub:ast.GosubStmt):
         dest = self.eval(gosub.destination)
-        pos = self.idx+1
-        self.substack.append(pos)
-        if len(self.substack) > 1024:
+        self.substack.append(self.cursor)
+        if len(self.substack) > 255:
             raise RuntimeError("recursion limit")
 
         newidx = self._calc_go(dest)
-        self.idx = newidx
+        self.cursor = newidx
 
     def _return(self):
         pos = self.substack[-1]
         self.substack.pop()
-        self.idx = pos
+        self.cursor = pos
 
 
     def eval_if(self, stmt:ast.IfStmt):
