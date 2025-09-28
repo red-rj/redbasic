@@ -158,11 +158,11 @@ class EndStmt(Empty, InteractiveStmt):
     pass
 
 @dataclass
-class RunStmt(Stmt):
+class RunStmt(InteractiveStmt):
     arguments:list[Expr]
 
 @dataclass
-class ListStmt(Stmt):
+class ListStmt(InteractiveStmt):
     arguments:list[Expr]
     mode:str = 'code'
 

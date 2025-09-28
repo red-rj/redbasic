@@ -63,7 +63,7 @@ class Parser:
             except Exception:
                 pass
 
-            self.skip(Token.eol)
+            #self.skip(Token.eol)
             return Label(stmt, name[:-1])
         
         linenum = self.line_number()
@@ -211,12 +211,16 @@ class Parser:
 
     def list_stmt(self):
         self.eat(Token.kw_list)
-
-        args = self.expression()
         mode = 'code'
+        args = None
 
+        # list MODE or list NUM,NUM MODE
         if self.lookahead.token == Token.identifier:
             mode = self.identifier().name
+        else:
+            args = self.expression()
+            if self.lookahead.token == Token.identifier:
+                mode = self.identifier().name
 
         return ListStmt(args, mode)
     

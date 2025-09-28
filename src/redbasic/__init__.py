@@ -6,9 +6,10 @@ __all__ = [
     "ast",
     "interpreter",
     "parser",
-    "lexer"
+    "lexer",
+    "error"
 ]
 
-from .interpreter import Interpreter
-from .parser import Parser, parse_int
+from .interpreter import Interpreter, repl
+from .parser import Parser
 from .lexer import Tokenizer

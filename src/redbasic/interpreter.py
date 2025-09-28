@@ -1,4 +1,4 @@
-import sys
+import sys, os, pprint
 from typing import TextIO as Stream
 from . import ast, error
 from .parser import Parser, parse_int
@@ -16,7 +16,6 @@ def builtin_usr(out:Stream, *args):
 
 
 
-
 class Interpreter:
     "Redbasic interpreter"
 
@@ -28,7 +27,7 @@ class Interpreter:
         self.input = in_
         self.variables = {}
         self.substack = []
-        self.ast:ast.Program = None
+        self.ast = ast.Program([])
         self.allkeys = None
         self.cursor = 0
 
@@ -43,6 +42,7 @@ class Interpreter:
         self.ast = prog
         self.allkeys = [ x.linenum for x in self.ast.body ]
         maxcursor = len(self.allkeys)
+        self.cursor = 0
 
         while self.cursor < maxcursor:
             item = self.ast.body[self.cursor]
@@ -75,13 +75,42 @@ class Interpreter:
                 self.eval_if(stmt)
             case ast.InputStmt():
                 self.eval_input(stmt)
-            case ast.InteractiveStmt():
-                pass
+            case ast.ListStmt():
+                self._list(stmt)
+            case ast.ClearStmt():
+                self._clear()
             case ast.ReturnStmt():
                 self._return()
+            case ast.RunStmt():
+                self._run()
             case _:
                 raise NotImplementedError(f"unsupported statement {stmt}")
 
+    def _list(self, stmt:ast.ListStmt):
+        args = self.eval(stmt.arguments) if stmt.arguments else None
+        if isinstance(args, list):
+            start, end = args
+        elif args:
+            start, end = args, len(self.ast.body)
+        else:
+            start = 0
+            end = len(self.ast.body)
+        
+        body = self.ast.body[start:end]
+        tmp = ast.Program(body)
+        
+        if stmt.mode == 'code':
+            src = ast.reconstruct(tmp)
+            print(src, file=self.output)
+        elif stmt.mode == 'ast':
+            pprint.pp(tmp, stream=self.output)
+
+    def _clear(self):
+        if self.input.isatty():
+            os.system('cls' if os.name=='nt' else 'clear')
+
+    def _run(self):
+        self.exec()
 
     def eval(self, expr:ast.Expr) -> int|float|str|list:
         match expr:
@@ -96,7 +125,7 @@ class Interpreter:
             case ast.BinaryExpr():
                 return self.eval_binary_expr(expr)
             case ast.UnaryExpr():
-                return self.eval_unary_expr()
+                return self.eval_unary_expr(expr)
             case ast.Identifier():
                 return self.getvar(expr.name)
             case ast.Func():
@@ -269,3 +298,41 @@ class Interpreter:
         
     def setvar(self, name:str, value):
         self.variables[name] = value
+
+
+def repl(prog:ast.Program = None):
+    interp = Interpreter()
+    if prog:
+        interp.ast = prog
+    body = interp.ast.body
+    print("redbasic REPL v0.2")
+    print("Ctrl+C to exit")
+    try:
+        while 1:
+            code = input("> ")
+            line = interp.parser.parse_line(code)
+
+            # interactive statements
+            if isinstance(line.statement, ast.InteractiveStmt):
+                interp.exec_line(line)
+            else:
+                # code statements
+                # lines that don't start with a linenum are executed
+                # lines that start with a linenum are added to the program
+                replaced = False
+                for i, a in enumerate(interp.ast):
+                    if a.linenum == line.linenum:
+                        # replace line
+                        body[i] = line
+                        replaced = True
+                        break
+                if not replaced and line.linenum:
+                    body.append(line)
+                else:
+                    interp.exec_line(line)
+    except EOFError:
+        pass
+    except KeyboardInterrupt:
+        pass
+
+    print()
