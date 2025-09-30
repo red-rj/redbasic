@@ -1,4 +1,6 @@
-from .lexer import Token, Tokenizer
+import re
+from typing import NamedTuple
+from .lexer import Token, basic_spec, basic_stmt_sub_spec
 from .ast import *
 from . import error
 
@@ -28,15 +30,25 @@ def is_keyword(tok:Token):
     return tok in (kw for kw in Token if kw.name.startswith('kw_'))
 
 
+MODE_ROOT   = 0
+MODE_IF     = 1
+MODE_PRINT  = 2
+MODE_LIST   = 3
+MODE_INPUT  = 4
+
+
 class Parser:
     def __init__(self):
-        self.tokenizer = Tokenizer()
         self.stack = []
-    
+        self.lookahead:tuple[Token,str] = Token.eof, None
+
     def set_source(self, code:str):
-        self.tokenizer.reset(code)
+        self.cursor = 0
+        self.linenum = 1
+        self.mode = MODE_ROOT
+        self.code = code
         self.stack.clear()
-        self.lookahead = self.tokenizer.next_token()
+        self.lookahead = self.next_token()
  
     def parse(self, textcode:str=None):
         if textcode:
@@ -45,16 +57,85 @@ class Parser:
     
     def parse_line(self, code:str):
         self.set_source(code)
-        return self.line()
+        return self.line_stmt()
     
-    # -----
+    # --Tokenize--
+
+    def next_token(self) -> tuple[Token, str]:
+        if self.cursor >= len(self.code):
+            return None
+
+        for tok, pattern in basic_spec.items():
+            m = pattern.match(self.code, self.cursor)
+            if not m:
+                continue
+            
+            tvalue = m.group(0)
+            self.cursor += len(tvalue)
+
+            if tok == Token.eol:
+                self.linenum += 1
+
+            if tok in (None, Token.comment, Token.eol):
+                return self.next_token()
+            
+            return tok, tvalue
+        
+        raise error.BadSyntax(f"Unexpected '{self.code[self.cursor]}'", self.linenum)
+    
+    def trymatch(self, pattern:re.Pattern, default=None):
+        m = pattern.match(self.code, self.cursor)
+        if not m:
+            return default
+        self.push_undo()
+        value = m.group(0)
+        self.cursor += len(value)
+        self.lookahead = self.next_token()
+        return value
+
+    def trytoken(self, tok, spec=None):
+        if spec is None:
+            spec = basic_spec
+        pat = spec[tok]
+        value = self.trymatch(pat)
+        if value is not None:
+            return tok, value
+        else:
+            return None
+        
+
+    def eat(self, expected:Token = None) -> tuple[Token, str]:
+        if not expected:
+            expected = self.lookahead[0]
+        
+        node = self.lookahead
+        errmsg = None
+        
+        if node[0] == Token.eof and expected != Token.eof:
+            errmsg = "Unexpected end of input"
+        
+        if node[0] != expected:
+            errmsg = "Unexpected token"
+
+        if errmsg:
+            err = self._bad_syntax(errmsg)
+            err.add_note(f'expected {expected}')
+            err.add_note(f'got {node[0]}')
+            raise err
+        
+        self.push_undo()
+        self.lookahead = self.next_token()
+        return node
+    
+    # --private--
 
     def program(self):
         return Program(self.line_list())
     
-    def line(self):
-        self.skip('eol')
-        if self.lookahead.token == Token.named_label:
+    def line_stmt(self):
+        #self.skip(Token.eol)
+        token, _ = self.lookahead
+        if token == Token.named_label:
             _, name = self.eat()
             # statements are optional in labels
             stmt = None
@@ -66,35 +147,34 @@ class Parser:
             #self.skip(Token.eol)
             return Label(stmt, name[:-1])
         
-        linenum = self.line_number()
+        # get line number
+        # line numbers are optional, don't confuse a line number for an expression
+        linenum = 0
+        try:
+            n = self.integer().value
+            if not is_operator(self.lookahead[0]):
+                linenum = n
+            else:
+                self.undo()
+        except Exception:
+            pass
+
         stmt = self.statement()
-        self.skip('eol')
+        # self.skip('eol')
         return Line(stmt, linenum)
 
     def line_list(self):
         lines = []
-        while self.lookahead:
-            lines.append(self.line())
+        tok, _ = self.lookahead
+        while tok != Token.eof:
+            lines.append(self.line_stmt())
 
         return lines
-    
-    def line_number(self):
-        try:
-            # the first number found in a line may or may not be a linenum
-            # if it's part of an expression, it's not
-            n = self.integer().value
-            if not is_operator(self.lookahead.token):
-                return n
-            else:
-                self.undo()
-                return 0
-        except error.BadSyntax:
-            return 0
-        
+            
     # STATEMENTS
 
     def statement(self):
-        match self.lookahead.token:
+        match self.lookahead[0]:
             case Token.kw_print:
                 return self.print_stmt()
             case Token.kw_input:
@@ -134,12 +214,9 @@ class Parser:
 
         # print list
         plist = []
-        while self.lookahead and self.lookahead.token != 'eol':
+        while self.lookahead[0] not in (Token.eol, Token.eof):
             expr = self.single_expression()
-            sep = None
-            if self.lookahead.token in ',;':
-                sep = self.eat().value
-            
+            sep = self.trymatch(basic_stmt_sub_spec[Token.print_sep])
             plist.append(PrintItem(expr, sep))
 
         return PrintStmt(plist)
@@ -151,7 +228,7 @@ class Parser:
 
     def var_list(self):
         variables = [ self.identifier() ]
-        while self.lookahead.token == ',':
+        while self.lookahead[0] == Token.comma:
             self.eat()
             variables.append(self.identifier())
         
@@ -182,12 +259,12 @@ class Parser:
         self.eat(Token.kw_if)
         test = self.expression()
         
-        if self.lookahead.token == Token.kw_then:
+        if self.lookahead[0] == Token.kw_then:
             self.eat()
 
         consequent = self.statement()
 
-        if self.lookahead.token == Token.kw_else:
+        if self.lookahead[0] == Token.kw_else:
             self.eat()
             alt = self.statement()
         else:
@@ -211,21 +288,30 @@ class Parser:
 
     def list_stmt(self):
         self.eat(Token.kw_list)
-        mode = 'code'
         args = None
 
-        # list MODE or list NUM,NUM MODE
-        if self.lookahead.token == Token.identifier:
-            mode = self.identifier().name
-        else:
+        # if self.lookahead[0] == Token.identifier:
+        #     mode = self.identifier().name
+        # else:
+        #     args = self.expression()
+        #     if self.lookahead[0] == Token.identifier:
+        #         mode = self.identifier().name
+
+        # list MODE or list EXPRLIST MODE
+        notfound = object()
+        
+        if self.lookahead[0] == Token.integer:
             args = self.expression()
-            if self.lookahead.token == Token.identifier:
-                mode = self.identifier().name
+
+        mode = self.trymatch(basic_stmt_sub_spec[Token.list_mode], default=notfound)
+
+        if mode is notfound:
+            raise error.BadSyntax(f"Invalid list mode", self.linenum)
 
         return ListStmt(args, mode)
     
     def builtin_func(self, func):
-        name = self.eat(func).value
+        _, name = self.eat(func)
         self.eat(Token.l_paren)
         args = self.sequence_expr()
         self.eat(Token.r_paren)
@@ -253,7 +339,7 @@ class Parser:
     # TODO: return ast.SequenceExpr
     def sequence_expr(self) -> list[AssignmentExpr|LogicalExpr]:
         exprs = [ self.assignment_expr() ]
-        while self.lookahead.token == Token.comma:
+        while self.lookahead[0] == Token.comma:
             self.eat()
             exprs.append(self.assignment_expr())
         
@@ -261,7 +347,7 @@ class Parser:
     
     def assignment_expr(self) -> AssignmentExpr|LogicalExpr:
         left = self.logical_or_expr()
-        if not is_assignment_op(self.lookahead.token):
+        if not is_assignment_op(self.lookahead[0]):
             return left
         
         # assignment_op
@@ -275,7 +361,7 @@ class Parser:
             except error.BadSyntax:
                 pass
         
-        raise self._bad_syntax(f"expected one of {refrigirator}, got {self.lookahead.token}")
+        raise self._bad_syntax(f"expected one of {refrigirator}, got {self.lookahead}")
 
     # consume only one expression, w/o consuming ','
     single_expression = assignment_expr
@@ -283,8 +369,8 @@ class Parser:
     def logical_or_expr(self) -> LogicalExpr:
         left = self.logical_and_expr()
 
-        while self.lookahead.token == Token.logical_or:
-            op = self.eat().value
+        while self.lookahead[0] == Token.logical_or:
+            _, op = self.eat()
             right = self.logical_and_expr()
             left = LogicalExpr(op, left, right)
 
@@ -293,8 +379,8 @@ class Parser:
     def logical_and_expr(self) -> LogicalExpr:
         left = self.equality_expr()
 
-        while self.lookahead.token == Token.logical_and:
-            op = self.eat().value
+        while self.lookahead[0] == Token.logical_and:
+            _, op = self.eat()
             right = self.equality_expr()
             left = LogicalExpr(op, left, right)
 
@@ -303,8 +389,8 @@ class Parser:
     def equality_expr(self) -> BinaryExpr:
         left = self.relational_expr()
 
-        while self.lookahead.token == Token.equality_op:
-            op = self.eat().value
+        while self.lookahead[0] == Token.equality_op:
+            _, op = self.eat()
             right = self.relational_expr()
             left = BinaryExpr(op, left, right)
 
@@ -313,8 +399,8 @@ class Parser:
     def relational_expr(self) -> BinaryExpr:
         left = self.additive_expr()
 
-        while self.lookahead.token == Token.relational_op:
-            op = self.eat().value
+        while self.lookahead[0] == Token.relational_op:
+            _, op = self.eat()
             right = self.additive_expr()
             left = BinaryExpr(op, left, right)
 
@@ -323,8 +409,8 @@ class Parser:
     def additive_expr(self) -> BinaryExpr:
         left = self.multiplicative_expr()
 
-        while self.lookahead.token == Token.additive_op:
-            op = self.eat().value
+        while self.lookahead[0] == Token.additive_op:
+            _, op = self.eat()
             right = self.multiplicative_expr()
             left = BinaryExpr(op, left, right)
 
@@ -333,8 +419,8 @@ class Parser:
     def multiplicative_expr(self) -> BinaryExpr:
         left = self.unary_expr()
 
-        while self.lookahead.token == Token.multiplicative_op:
-            op = self.eat().value
+        while self.lookahead[0] == Token.multiplicative_op:
+            _, op = self.eat()
             right = self.unary_expr()
             left = BinaryExpr(op, left, right)
 
@@ -343,8 +429,8 @@ class Parser:
     def unary_expr(self):
         op = None
 
-        if self.lookahead.token in (Token.additive_op, Token.logical_not):
-            op = self.eat().value
+        if self.lookahead[0] in (Token.additive_op, Token.logical_not):
+            _, op = self.eat()
 
         if op:
             # allow chaining
@@ -353,10 +439,10 @@ class Parser:
         return self.primary_expr()
 
     def primary_expr(self):
-        if is_literal(self.lookahead.token):
+        if is_literal(self.lookahead[0]):
             return self.literal()
         
-        match self.lookahead.token:
+        match self.lookahead[0]:
             case Token.l_paren:
                 return self.paren_expr()
             case Token.identifier:
@@ -364,7 +450,7 @@ class Parser:
             case Token.eof | Token.eol:
                 return None
             case 'rnd' | 'usr':
-                return self.builtin_func(self.lookahead.token)
+                return self.builtin_func(self.lookahead[0])
             case _:
                 raise self._bad_syntax(f"unexpected primary_expr {self.lookahead}")
 
@@ -394,7 +480,7 @@ class Parser:
         return StringLiteral(string[1:-1])
     
     def literal(self):
-        match self.lookahead.token:
+        match self.lookahead[0]:
             case Token.integer:
                 return self.integer()
             case Token.floatingpoint:
@@ -407,44 +493,26 @@ class Parser:
                 raise e
 
 
-    def eat(self, expected:Token = None):
-        if not expected:
-            expected = self.lookahead.token
-        
-        node = self.lookahead
-        errmsg = None
-        
-        if not node and expected != Token.eof:
-            errmsg = "Unexpected end of input"
-        
-        if node.token != expected:
-            errmsg = "Unexpected token"
 
-        if errmsg:
-            err = self._bad_syntax(errmsg)
-            err.add_note(f'expected {expected}')
-            err.add_note(f'got {node.token}')
-            raise err
-        
-        cursor, line = self.tokenizer.getloc()
-        self.stack.append((self.lookahead, cursor, line))
-        self.lookahead = self.tokenizer.next_token()
-        return node
 
     
     def skip(self, tok:Token):
-        while self.lookahead.token == tok:
+        while self.lookahead[0] == tok:
             self.eat()
+
+
+    def push_undo(self):
+        return self.stack.append((self.lookahead, self.cursor, self.linenum))
 
     def undo(self, n=1):
         assert len(self.stack) >= n
         while n:
             look,cursor,line = self.stack[-1]
             self.lookahead = look
-            self.tokenizer.cursor = cursor
-            self.tokenizer.line = line
+            self.cursor = cursor
+            self.linenum = line
             self.stack.pop()
             n -= 1
 
     def _bad_syntax(self, msg):
-        return error.BadSyntax(msg, self.tokenizer.line)
+        return error.BadSyntax(msg, self.linenum)

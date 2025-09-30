@@ -31,7 +31,8 @@ This is a implementation of the BASIC programing language in python. It's based 
         ;
 
     label
-        : identifier ':'
+        : identifier ':' EOL
+        : identifier ':' statement EOL
         ;
 
     statement 

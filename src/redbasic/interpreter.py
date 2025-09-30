@@ -104,6 +104,8 @@ class Interpreter:
             print(src, file=self.output)
         elif stmt.mode == 'ast':
             pprint.pp(tmp, stream=self.output)
+        else:
+            raise RuntimeError(f"invalid list mode '{stmt.mode}'")
 
     def _clear(self):
         if self.input.isatty():
