@@ -35,6 +35,11 @@ class Token(StrEnum):
     eol = auto()
     eof = auto()
 
+    f_builtin = auto()
+    # statement specific
+    list_mode = auto()
+    print_sep = auto()
+
     # manual values
     # keywords
     kw_print = 'print'
@@ -61,10 +66,6 @@ class Token(StrEnum):
     r_paren = ')'
     comma = ','
     semicolon = ';'
-    # statement specific
-    list_mode = auto()
-    print_sep = auto()
-
 
 # lang spec definition
 rxc = re.compile

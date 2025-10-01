@@ -1,5 +1,5 @@
 import re
-from .lexer import Token, basic_spec
+from .lexer import Token, basic_spec, Spec
 from .ast import *
 from . import error
 
@@ -29,12 +29,9 @@ def is_keyword(tok:Token):
     return tok in (kw for kw in Token if kw.name.startswith('kw_'))
 
 
-MODE_ROOT   = 0
-MODE_IF     = 1
-MODE_PRINT  = 2
-MODE_LIST   = 3
-MODE_INPUT  = 4
-
+# TODO: find a way to do better tokenization
+# maybe with a mode variable?
+# Spec = { MODE_ROOT: basic_spec, MODE_LIST: { mode: r"code|ast" }, ... }
 
 class Parser:
     def __init__(self):
@@ -44,14 +41,12 @@ class Parser:
     def set_source(self, code:str):
         self.cursor = 0
         self.linenum = 1
-        self.mode = MODE_ROOT
         self.code = code
         self.stack.clear()
         self.lookahead = self.next_token()
  
     def parse(self, textcode:str=None):
-        if textcode:
-            self.set_source(textcode)
+        self.set_source(textcode)
         return self.program()
     
     def parse_line(self, code:str):
@@ -63,7 +58,7 @@ class Parser:
     def next_token(self) -> tuple[Token, str]:
         if self.cursor >= len(self.code):
             return Token.eof, None
-
+        
         for tok, pattern in basic_spec.items():
             m = pattern.match(self.code, self.cursor)
             if not m:
@@ -106,13 +101,12 @@ class Parser:
         self.lookahead = self.next_token()
         return node
     
-    # --private--
+    # ----
 
     def program(self):
         return Program(self.line_list())
     
     def line_stmt(self):
-        #self.skip(Token.eol)
         token, _ = self.lookahead
         if token == Token.named_label:
             _, name = self.eat()
@@ -123,7 +117,6 @@ class Parser:
             except Exception:
                 pass
 
-            #self.skip(Token.eol)
             return Label(stmt, name[:-1])
         
         # get line number
@@ -139,7 +132,6 @@ class Parser:
             pass
 
         stmt = self.statement()
-        # self.skip('eol')
         return Line(stmt, linenum)
 
     def line_list(self):
@@ -191,6 +183,7 @@ class Parser:
         self.eat(Token.kw_print)
 
         # print list
+        # TODO: Tokenize separetor as print_sep: r"[,;]"
         plist = []
         while self.lookahead[0] not in (Token.eol, Token.eof):
             expr = self.single_expression()
@@ -274,6 +267,7 @@ class Parser:
         args = None
 
         # list MODE or list NUM,NUM MODE
+        # TODO: Tokenize as list_mode: r"code|ast"
         if self.lookahead[0] == Token.identifier:
             mode = self.identifier().name
         else:
@@ -464,14 +458,6 @@ class Parser:
                 e = self._bad_syntax("Expected literal (int, float, str)")
                 e.add_note(self.lookahead)
                 raise e
-
-
-
-
-    
-    def skip(self, tok:Token):
-        while self.lookahead[0] == tok:
-            self.eat()
 
 
     def push_undo(self):

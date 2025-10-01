@@ -11,7 +11,7 @@ def builtin_rnd(min:int, max:int=None):
 
     return randint(min, max)
 
-def builtin_usr(out:Stream, *args):
+def builtin_usr(*args):
     raise NotImplementedError("USR func")
 
 
