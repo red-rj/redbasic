@@ -70,135 +70,62 @@ class Token(StrEnum):
 rxc = re.compile
 basic_spec = {
     # ignorables
-    Token.eol: rxc(r"^(\r\n|\n)"),
-    None: rxc(r'^\s+'), 
-    Token.comment: rxc(r"^\bREM\b.*", re.IGNORECASE),
+    Token.eol: rxc(r"(\r\n|\n)"),
+    None: rxc(r'\s+'), 
+    Token.comment: rxc(r"\bREM\b.*", re.IGNORECASE),
     
     # Numbers
     #   floating point w/ scientific exponents
-    Token.floatingpoint: rxc(r"^(\d+\.\d*)([Ee][-+]?\d+)?"),
+    Token.floatingpoint: rxc(r"(\d+\.\d*)([Ee][-+]?\d+)?"),
     #   support oldschool $90 hex: integers, in HEX, OCTAL and DECIMAL respectivly. TODO
-    Token.integer: rxc(r"^((0[xX][a-fA-F\d]+)|(0[0-7]+)|(\d+))"),
-    Token.string_literal: rxc(r'^"[^"]*"'),
+    Token.integer: rxc(r"((0[xX][a-fA-F\d]+)|(0[0-7]+)|(\d+))"),
+    Token.string_literal: rxc(r'"[^"]*"'),
 
     # equality
-    Token.equality_op: rxc(r'^(==|<>|><)'),
+    Token.equality_op: rxc(r'(==|<>|><)'),
 
     # assignment
-    Token.assignment_complex: rxc(r'^[+\-*/]='),
-    Token.assignment: rxc(r'^='),
+    Token.assignment_complex: rxc(r'[+\-*/]='),
+    Token.assignment: rxc(r'='),
 
     # relational
-    Token.relational_op: rxc(r'^[><]=?'),
+    Token.relational_op: rxc(r'[><]=?'),
 
     # math operations
-    Token.additive_op: rxc(r"^[+\-]"),
-    Token.multiplicative_op: rxc(r"^[*/]"),
+    Token.additive_op: rxc(r"[+\-]"),
+    Token.multiplicative_op: rxc(r"[*/]"),
 
-    Token.l_paren: rxc(r"^\("),
-    Token.r_paren: rxc(r"^\)"),
-    Token.comma: rxc(r'^,'),
-    Token.semicolon: rxc(r'^;'),
+    Token.l_paren: rxc(r"\("),
+    Token.r_paren: rxc(r"\)"),
+    Token.comma: rxc(r','),
+    Token.semicolon: rxc(r';'),
 
-    Token.logical_not: rxc(r'^!'),
-    Token.logical_and: rxc(r'^&&'),
-    Token.logical_or: rxc(r'^[|]{2}'),
+    Token.logical_not: rxc(r'!'),
+    Token.logical_and: rxc(r'&&'),
+    Token.logical_or: rxc(r'[|]{2}'),
 
     # keywords
-    Token.kw_print: rxc(r"^\b(PRINT|PR)\b", re.IGNORECASE),
-    Token.kw_if: rxc(r"^\bIF\b", re.IGNORECASE),
-    Token.kw_then: rxc(r"^\bTHEN\b", re.IGNORECASE),
-    Token.kw_else: rxc(r"^\bELSE\b", re.IGNORECASE),
-    Token.kw_input: rxc(r"^\bINPUT\b", re.IGNORECASE),
-    Token.kw_let: rxc(r"^\bLET\b", re.IGNORECASE),
-    Token.kw_goto: rxc(r"^\bGOTO\b", re.IGNORECASE),
-    Token.kw_gosub: rxc(r"^\bGOSUB\b", re.IGNORECASE),
-    Token.kw_return: rxc(r"^\bRETURN\b", re.IGNORECASE),
-    Token.kw_end: rxc(r"^\bEND\b", re.IGNORECASE),
-    Token.kw_clear: rxc(r"^\bCLEAR\b", re.IGNORECASE),
-    Token.kw_list: rxc(r"^\bLIST\b", re.IGNORECASE),
-    Token.kw_run: rxc(r"^\bRUN\b", re.IGNORECASE),
+    Token.kw_print: rxc(r"\b(PRINT|PR)\b", re.IGNORECASE),
+    Token.kw_if: rxc(r"\bIF\b", re.IGNORECASE),
+    Token.kw_then: rxc(r"\bTHEN\b", re.IGNORECASE),
+    Token.kw_else: rxc(r"\bELSE\b", re.IGNORECASE),
+    Token.kw_input: rxc(r"\bINPUT\b", re.IGNORECASE),
+    Token.kw_let: rxc(r"\bLET\b", re.IGNORECASE),
+    Token.kw_goto: rxc(r"\bGOTO\b", re.IGNORECASE),
+    Token.kw_gosub: rxc(r"\bGOSUB\b", re.IGNORECASE),
+    Token.kw_return: rxc(r"\bRETURN\b", re.IGNORECASE),
+    Token.kw_end: rxc(r"\bEND\b", re.IGNORECASE),
+    Token.kw_clear: rxc(r"\bCLEAR\b", re.IGNORECASE),
+    Token.kw_list: rxc(r"\bLIST\b", re.IGNORECASE),
+    Token.kw_run: rxc(r"\bRUN\b", re.IGNORECASE),
 
     # builtin functions
-    Token.f_rnd: rxc(r"^RND", re.IGNORECASE),
-    Token.f_usr: rxc(r"^USR", re.IGNORECASE),
+    Token.f_rnd: rxc(r"RND", re.IGNORECASE),
+    Token.f_usr: rxc(r"USR", re.IGNORECASE),
 
     # identifiers
     #   named labels
-    Token.named_label: rxc(r"^[a-zA-Z_]\w*:"),
+    Token.named_label: rxc(r"[a-zA-Z_]\w*:"),
     #   variables
-    Token.identifier: rxc(r"^[a-zA-Z_]\w*")
+    Token.identifier: rxc(r"[a-zA-Z_]\w*")
 }
-
-basic_stmt_sub_spec = {
-    Token.list_mode: rxc(r"(code|ast)", re.IGNORECASE),
-    Token.print_sep: rxc(r"[;,]"),
-}
-
-class Mode(Enum):
-    root = auto()
-    if_stmt = auto()
-    print_stmt = auto()
-    list_stmt = auto()
-
-Spec = {
-    Mode.root: basic_spec,
-    Mode.if_stmt: {
-        Token.kw_if: basic_spec[Token.kw_if]
-    }
-}
-
-
-class TokenNode(NamedTuple):
-    token:Token = Token.eof
-    value:str = None
-
-    def __bool__(self):
-        return self.token != Token.eof
-    
-    def __repr__(self) -> str:
-        return f"{self.__class__.__name__}({self.token!s}, {self.value!r})"
-
-
-class Tokenizer:
-    def __init__(self, string:str = None):
-        self.reset(string)
-
-    def reset(self, string:str = None):
-        self.string = string
-        self.cursor = 0
-        self.line = 1
-
-    def has_more_tokens(self):
-        return self.cursor < len(self.string)
-        
-    def next_token(self):
-        if not self.has_more_tokens():
-            return TokenNode()
-        
-        code = self.string[self.cursor:]
-
-        for pattern, token in basic_spec.items():
-            matched = pattern.match(code)
-            if not matched:
-                continue
-            
-            if token == Token.eol:
-                self.line += 1
-
-            token_value = matched.group(0)
-            self.cursor += len(token_value)
-
-            if not token:
-                return self.next_token()
-
-            return TokenNode(token, token_value)
-        
-        raise SyntaxError(f"Unexpected token: '{code[0]}'")
-
-    def getloc(self):
-        return self.cursor, self.line
-    
-    def __bool__(self):
-        return self.has_more_tokens()
-

@@ -93,7 +93,6 @@ class Label(Line):
     A named line
         name: input A
     """
-
     def __init__(self, statement:Stmt, name:str):
         self.name = name
         super().__init__(statement, hash(name))
@@ -164,7 +163,7 @@ class RunStmt(InteractiveStmt):
 @dataclass
 class ListStmt(InteractiveStmt):
     arguments:list[Expr]
-    mode:str = 'code'
+    mode:str
 
 # reconstruct util
 

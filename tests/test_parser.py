@@ -268,8 +268,8 @@ class statmentTests(parserTestCase):
 
 
     def test_list_stmt(tc):
-        tc.assertAst('list', Program([Line(ListStmt(None))]))
-        tc.assertAst('list 1,5',  Program([Line(ListStmt([IntLiteral(1), IntLiteral(5)]))]))
+        tc.assertAst('list', Program([Line(ListStmt(None, 'code'))]))
+        tc.assertAst('list 1,5',  Program([Line(ListStmt([IntLiteral(1), IntLiteral(5)], 'code'))]))
         tc.assertAstEqual('list 6,12', 'list 6,12 code')
         tc.assertAst('list 1,5 ast',  Program([Line(ListStmt([IntLiteral(1), IntLiteral(5)], 'ast'))]))
 
@@ -334,16 +334,17 @@ class labelTests(parserTestCase):
     def test_label(tc):
         tc.assertAst(
             """
-            name:
-            let i = 1
-            """,
-            Program(body=[Label(None, name='name'), Line(statement=VariableDecl(iden=Identifier(name='i'), init=IntLiteral(value=1)), linenum=0)])
-        )
-        tc.assertAst(
-            """
             name: let i = 1
             """,
             Program(body=[Label(VariableDecl(Identifier("i"), IntLiteral(1)), name='name')])
+        )
+        tc.assertAst(
+            """
+            name: 
+                let i = 1
+            99 print i
+            """,
+            Program(body=[Label(VariableDecl(Identifier('i'), IntLiteral(1)), 'name'), Line(PrintStmt([PrintItem(Identifier('i'), None)]), 99)])
         )
     
 class functionTests(parserTestCase):

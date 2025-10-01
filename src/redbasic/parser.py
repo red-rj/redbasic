@@ -1,6 +1,5 @@
 import re
-from typing import NamedTuple
-from .lexer import Token, basic_spec, basic_stmt_sub_spec
+from .lexer import Token, basic_spec
 from .ast import *
 from . import error
 
@@ -63,7 +62,7 @@ class Parser:
 
     def next_token(self) -> tuple[Token, str]:
         if self.cursor >= len(self.code):
-            return None
+            return Token.eof, None
 
         for tok, pattern in basic_spec.items():
             m = pattern.match(self.code, self.cursor)
@@ -83,26 +82,6 @@ class Parser:
         
         raise error.BadSyntax(f"Unexpected '{self.code[self.cursor]}'", self.linenum)
     
-    def trymatch(self, pattern:re.Pattern, default=None):
-        m = pattern.match(self.code, self.cursor)
-        if not m:
-            return default
-        self.push_undo()
-        value = m.group(0)
-        self.cursor += len(value)
-        self.lookahead = self.next_token()
-        return value
-
-    def trytoken(self, tok, spec=None):
-        if spec is None:
-            spec = basic_spec
-        pat = spec[tok]
-        value = self.trymatch(pat)
-        if value is not None:
-            return tok, value
-        else:
-            return None
-        
 
     def eat(self, expected:Token = None) -> tuple[Token, str]:
         if not expected:
@@ -165,8 +144,7 @@ class Parser:
 
     def line_list(self):
         lines = []
-        tok, _ = self.lookahead
-        while tok != Token.eof:
+        while self.lookahead[0] != Token.eof:
             lines.append(self.line_stmt())
 
         return lines
@@ -216,7 +194,10 @@ class Parser:
         plist = []
         while self.lookahead[0] not in (Token.eol, Token.eof):
             expr = self.single_expression()
-            sep = self.trymatch(basic_stmt_sub_spec[Token.print_sep])
+            if self.lookahead[0] in (Token.comma, Token.semicolon):
+                _, sep = self.eat()
+            else:
+                sep = None
             plist.append(PrintItem(expr, sep))
 
         return PrintStmt(plist)
@@ -287,26 +268,18 @@ class Parser:
         return RunStmt(args)
 
     def list_stmt(self):
+        # list MODE or list EXPRLIST MODE
         self.eat(Token.kw_list)
+        mode = 'code'
         args = None
 
-        # if self.lookahead[0] == Token.identifier:
-        #     mode = self.identifier().name
-        # else:
-        #     args = self.expression()
-        #     if self.lookahead[0] == Token.identifier:
-        #         mode = self.identifier().name
-
-        # list MODE or list EXPRLIST MODE
-        notfound = object()
-        
-        if self.lookahead[0] == Token.integer:
+        # list MODE or list NUM,NUM MODE
+        if self.lookahead[0] == Token.identifier:
+            mode = self.identifier().name
+        else:
             args = self.expression()
-
-        mode = self.trymatch(basic_stmt_sub_spec[Token.list_mode], default=notfound)
-
-        if mode is notfound:
-            raise error.BadSyntax(f"Invalid list mode", self.linenum)
+            if self.lookahead[0] == Token.identifier:
+                mode = self.identifier().name
 
         return ListStmt(args, mode)
     
@@ -357,7 +330,7 @@ class Parser:
                 node = self.eat(food)
                 if not isinstance(left, Identifier):
                     raise self._bad_syntax('Invalid left-hand side in assignment expression')
-                return AssignmentExpr(operator=node.value, left=left, right=self.assignment_expr())
+                return AssignmentExpr(operator=node[1], left=left, right=self.assignment_expr())
             except error.BadSyntax:
                 pass
         
