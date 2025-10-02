@@ -5,7 +5,7 @@ import pathlib, sys
 sys.path.append(str(pathlib.Path(__file__).absolute().parent.parent/'src'))
 
 from redbasic.parser import Parser, parse_int, is_keyword
-from redbasic.lexer import Token
+from redbasic.spec import Token
 from redbasic.ast import *
 
 # --- PARSER TESTS ---

@@ -1,5 +1,5 @@
 import re
-from .lexer import Token, basic_spec
+from .spec import Token, basic_spec
 from .ast import *
 from . import error
 
