@@ -5,15 +5,17 @@ from .parser import Parser, parse_int
 
 
 def builtin_rnd(min:int, max:int=None):
-    from random import randint
+    import random
     if max is None:
         min, max = 0, min
 
-    return randint(min, max)
+    return random.randint(min, max)
 
 def builtin_usr(*args):
     raise NotImplementedError("USR func")
 
+def builtin_pow(base, exp):
+    return base ** exp
 
 
 class Interpreter:
@@ -136,18 +138,21 @@ class Interpreter:
                 raise NotImplementedError(f"unsupported expression {expr}")
 
     def eval_func(self, func:ast.Func):
-        if func.name == 'rnd':
-            args = self.eval(func.arguments)
+        try:
+            if func.name == 'rnd':
+                args = self.eval(func.arguments)
 
-            try:
                 n = builtin_rnd(*args)
                 return n
-            except Exception as e:
-                raise RuntimeError('rnd: '+str(e))
-            
-        elif func.name == 'usr':
-            args = self.eval(func.arguments)
-            builtin_usr(self.output, *args)
+            elif func.name == 'usr':
+                args = self.eval(func.arguments)
+                builtin_usr(self.output, *args)
+            elif func.name == 'pow':
+                args = self.eval(func.arguments)
+                n = builtin_pow(*args)
+                return n
+        except AttributeError as e:
+            raise RuntimeError(f"{func.name}: {e}")
 
 
     def eval_print(self, printstmt:ast.PrintStmt):

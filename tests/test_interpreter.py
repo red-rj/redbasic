@@ -1,11 +1,14 @@
-import unittest, io
+import unittest, io, random
 from unittest.mock import Mock, patch
 # HACK: fix path and imports
 import pathlib, sys
 sys.path.append(str(pathlib.Path(__file__).absolute().parent.parent/'src'))
 
 from redbasic import Interpreter
-from redbasic.lexer import Token
+
+# predictible seed for testing rnd()
+random.seed(1993)
+
 
 class Test(unittest.TestCase):
     testdir = pathlib.Path(__file__).parent
@@ -14,6 +17,7 @@ class Test(unittest.TestCase):
         self.input = io.StringIO()
         self.output = io.StringIO()
         self.interp = Interpreter(out=self.output, in_=self.input)
+        
 
     def tearDown(self):
         self.input.truncate(0)
@@ -27,10 +31,7 @@ class Test(unittest.TestCase):
         for a in lines:
             self.input.write(str(a)+'\n')
         self.input.seek(0)
-
-    def openScript(self, name):
-        return open(self.testdir/name, 'r', encoding='utf-8')
-    
+  
     def execScript(self, script):
         with open(self.testdir/script, encoding='utf-8') as f:
             code = f.read()
@@ -57,3 +58,15 @@ class ScriptTests(Test):
         tc.execScript("sum-ints.bas")
         tc.assertEqual("Result = 69\n", tc.output.getvalue())
         tc.assertEqual(tc.interp.variables["result"], 69)
+
+    def test_rnd(tc):
+        code = "69 let r = rnd(1, 100)"
+        tc.interp.set_source(code)
+        tc.interp.exec()
+        tc.assertEqual(tc.interp.variables['r'], 62)
+
+    def test_pow(tc):
+        code = '10 let p = pow(2, 10)'
+        tc.interp.set_source(code)
+        tc.interp.exec()
+        tc.assertEqual(tc.interp.variables['p'], 1024)

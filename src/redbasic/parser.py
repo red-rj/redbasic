@@ -1,5 +1,5 @@
 import re
-from .lexer import Token, basic_spec, Spec
+from .lexer import Token, basic_spec
 from .ast import *
 from . import error
 
@@ -416,7 +416,7 @@ class Parser:
                 return self.identifier()
             case Token.eof | Token.eol:
                 return None
-            case 'rnd' | 'usr':
+            case Token.f_builtin:
                 return self.builtin_func(self.lookahead[0])
             case _:
                 raise self._bad_syntax(f"unexpected primary_expr {self.lookahead}")

@@ -58,9 +58,6 @@ class Token(StrEnum):
     kw_rem = 'rem'
     kw_true = 'true'
     kw_false = 'false'
-    # builtin funcs
-    f_rnd = 'rnd'
-    f_usr = 'usr'
     # symbols
     l_paren = '('
     r_paren = ')'
@@ -121,8 +118,7 @@ basic_spec = {
     Token.kw_run: rxc(r"\bRUN\b", re.IGNORECASE),
 
     # builtin functions
-    Token.f_rnd: rxc(r"RND", re.IGNORECASE),
-    Token.f_usr: rxc(r"USR", re.IGNORECASE),
+    Token.f_builtin: rxc(r"\b(USR|RND|POW)\b", re.IGNORECASE),
 
     # identifiers
     #   named labels
