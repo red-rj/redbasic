@@ -185,7 +185,7 @@ class Parser:
         # print list
         # TODO: Tokenize separetor as print_sep: r"[,;]"
         plist = []
-        while self.lookahead[0] not in (Token.eol, Token.eof):
+        while self.lookahead[0]!=Token.eof and not is_keyword(self.lookahead[0]):
             expr = self.single_expression()
             if self.lookahead[0] in (Token.comma, Token.semicolon):
                 _, sep = self.eat()
@@ -304,7 +304,7 @@ class Parser:
             
     
     # TODO: return ast.SequenceExpr
-    def sequence_expr(self) -> list[AssignmentExpr|LogicalExpr]:
+    def sequence_expr(self) -> list[Expr]:
         exprs = [ self.assignment_expr() ]
         while self.lookahead[0] == Token.comma:
             self.eat()

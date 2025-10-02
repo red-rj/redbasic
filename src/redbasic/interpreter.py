@@ -126,8 +126,6 @@ class Interpreter:
                 return [self.eval(e) for e in expr] 
             case ast.AssignmentExpr():
                 return self.eval_assignment(expr)
-            case ast.LogicalExpr():
-                return self.eval_logical_expr(expr)
             case ast.BinaryExpr():
                 return self.eval_binary_expr(expr)
             case ast.UnaryExpr():
@@ -267,14 +265,18 @@ class Interpreter:
                 return lhs * rhs
             case '/':
                 return lhs / rhs
-            
-        raise RuntimeError(f"bad binary operator '{expr.operator}'")
-
-    def eval_logical_expr(self, expr:ast.LogicalExpr):
-        rhs = self.eval(expr.right)
-        lhs = self.eval(expr.left)
-
-        match expr.operator:
+            case '>':
+                return lhs > rhs
+            case '>=':
+                return lhs > rhs
+            case '<':
+                return lhs < rhs
+            case '<=':
+                return lhs <= rhs
+            case '<>'|'><'|'!=':
+                return lhs != rhs
+            case '==':
+                return lhs == rhs
             case '||':
                 return lhs or rhs
             case '&&':

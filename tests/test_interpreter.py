@@ -1,5 +1,5 @@
 import unittest, io, random
-from unittest.mock import Mock, patch
+import re
 # HACK: fix path and imports
 import pathlib, sys
 sys.path.append(str(pathlib.Path(__file__).absolute().parent.parent/'src'))
@@ -70,3 +70,36 @@ class ScriptTests(Test):
         tc.interp.set_source(code)
         tc.interp.exec()
         tc.assertEqual(tc.interp.variables['p'], 1024)
+
+    def test_loose_expr(tc):
+        tc.interp.set_source("1  32+1993")
+        tc.interp.exec()
+        tc.assertEqual(tc.interp.variables["_"], 2025)
+
+    def test_math(tc):
+        tc.execScript("math.bas")
+        var = tc.interp.variables
+        names = ('R_add1','R_add2', 'R_sub1','R_sub2', 'R_div1','R_div2', 'R_mul1','R_mul2')
+        expected = (80, 80, 74, 74, 37, 37, 111, 111)
+        assert len(names)==len(expected)
+
+        map = dict(zip(names, expected))
+        for key in map:
+            tc.assertEqual(var[key], map[key], key)
+        
+    def test_if(tc):
+        tc.execScript("if.bas")
+        out = tc.output.getvalue()
+        tc.assertRegex(out, r"if ok")
+        tc.assertRegex(out, r"else ok")
+        tc.assertNotRegex(out, r"error")
+
+    def test_relational(tc):
+        tc.execScript("relational.bas")
+        out = tc.output.getvalue()
+        tc.assertRegex(out, r"if and")
+        tc.assertRegex(out, r"else and")
+        tc.assertRegex(out, r"if or")
+        tc.assertRegex(out, r"else or")
+        tc.assertNotRegex(out, r"error")
+
