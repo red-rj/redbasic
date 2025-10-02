@@ -37,7 +37,9 @@ class Interpreter:
     def set_source(self, code:str):
         self.ast = self.parser.parse(code)
 
-    def exec_line(self, line:ast.Line):
+    def exec_line(self, line:ast.Line|str):
+        if isinstance(line, str):
+            line = self.parser.parse_line(line)
         self.exec_statement(line.statement)
 
     def exec_program(self, prog:ast.Program):
@@ -327,7 +329,7 @@ def repl(prog:ast.Program = None):
                 # lines that don't start with a linenum are executed
                 # lines that start with a linenum are added to the program
                 replaced = False
-                for i, a in enumerate(interp.ast):
+                for i, a in enumerate(body):
                     if a.linenum == line.linenum:
                         # replace line
                         body[i] = line

@@ -8,11 +8,11 @@ from . import ast, Parser, Interpreter, repl
 # https://youtube.com/playlist?list=PL_2VhOvlMk4UHGqYCLWc6GO8FaPl8fQTh&si=Z6xQIWjwEH5tTdt2
 
 def main():
-    pargs = argparse.ArgumentParser()
-    pargs.add_argument('-c', dest='code')
-    pargs.add_argument('-f', dest='file', type=argparse.FileType())
-    pargs.add_argument('-i', dest='interactive', action='store_true')
-    pargs.add_argument('--dump', action='append', choices=('ast', 'vars'))
+    pargs = argparse.ArgumentParser('redbasic')
+    pargs.add_argument('-c', dest='code', help="parse string")
+    pargs.add_argument('-f', dest='file', type=argparse.FileType(), help="Parse file")
+    pargs.add_argument('-i', dest='interactive', action='store_true', help="interactive mode, can be combined with -f or -c")
+    pargs.add_argument('--dump', action='append', choices=('ast', 'vars'), help="dump info at program exit")
 
     args = pargs.parse_args()
     p = Parser()
@@ -22,10 +22,7 @@ def main():
     elif args.file:
         text = args.file.read()
         Ast = p.parse(text)
-    else:
-        print('invalid mode', file=sys.stderr)
-        pargs.print_help()
-        exit(5)
+
 
     if args.interactive:
         prog = Ast if (args.code or args.file) else ast.Program([])
@@ -33,14 +30,13 @@ def main():
         exit()
 
     interp = Interpreter(p)
-
-    if args.dump and 'ast' in args.dump:
-        pprint.pp(Ast)
-
     interp.exec_program(Ast)
 
-    if args.dump and 'vars' in args.dump:
-        pprint.pp(interp.variables)
+    if args.dump:
+        if 'ast' in args.dump:
+            pprint.pp(Ast)
+        if 'vars' in args.dump:
+            pprint.pp(interp.variables)
 
 
 if __name__=='__main__':
