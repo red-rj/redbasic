@@ -101,12 +101,17 @@ class Parser:
         self.lookahead = self.next_token()
         return node
     
+    def skip(self, tok:Token):
+        while self.lookahead[0] == tok:
+            self.eat()
+
     # ----
 
     def program(self):
         return Program(self.line_list())
     
     def line_stmt(self):
+        self.skip(Token.eol)
         token, _ = self.lookahead
         if token == Token.named_label:
             _, name = self.eat()
@@ -114,6 +119,7 @@ class Parser:
             stmt = None
             try:
                 stmt = self.statement()
+                self.skip(Token.eol)
             except Exception:
                 pass
 
@@ -132,6 +138,7 @@ class Parser:
             pass
 
         stmt = self.statement()
+        self.skip(Token.eol)
         return Line(stmt, linenum)
 
     def line_list(self):
@@ -196,7 +203,7 @@ class Parser:
         return PrintStmt(plist)
 
     def input_stmt(self):
-        self.eat('input')
+        self.eat(Token.kw_input)
         varlist = self.var_list()
         return InputStmt(varlist)
 
@@ -209,17 +216,17 @@ class Parser:
         return variables
     
     def goto_stmt(self):
-        self.eat('goto')
+        self.eat(Token.kw_goto)
         dest = self.expression()
         return GotoStmt(dest)
     
     def gosub_stmt(self):
-        self.eat('gosub')
+        self.eat(Token.kw_gosub)
         dest = self.expression()
         return GosubStmt(dest)
         
     def let_stmt(self):
-        self.eat('let')
+        self.eat(Token.kw_let)
         return self.variable_decl()
     
     def variable_decl(self):

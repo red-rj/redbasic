@@ -68,17 +68,17 @@ class Interpreter:
                 if not isinstance(stmt.expression, ast.AssignmentExpr):
                     self.setvar(self.TEMP_VAR, val)
             case ast.PrintStmt():
-                self.eval_print(stmt)
+                self._print(stmt)
             case ast.GotoStmt():
-                self.eval_goto(stmt)
+                self._goto(stmt)
             case ast.GosubStmt():
                 self._gosub(stmt)
             case ast.EndStmt():
                 self.cursor = 2**31
             case ast.IfStmt():
-                self.eval_if(stmt)
+                self._if(stmt)
             case ast.InputStmt():
-                self.eval_input(stmt)
+                self._input(stmt)
             case ast.ListStmt():
                 self._list(stmt)
             case ast.ClearStmt():
@@ -125,19 +125,19 @@ class Interpreter:
             case list():# SequenceExpr
                 return [self.eval(e) for e in expr] 
             case ast.AssignmentExpr():
-                return self.eval_assignment(expr)
+                return self._assignment(expr)
             case ast.BinaryExpr():
-                return self.eval_binary_expr(expr)
+                return self._binary_expr(expr)
             case ast.UnaryExpr():
-                return self.eval_unary_expr(expr)
+                return self._unary_expr(expr)
             case ast.Identifier():
                 return self.getvar(expr.name)
             case ast.Func():
-                return self.eval_func(expr)
+                return self._func(expr)
             case _:        
                 raise NotImplementedError(f"unsupported expression {expr}")
 
-    def eval_func(self, func:ast.Func):
+    def _func(self, func:ast.Func):
         try:
             if func.name == 'rnd':
                 args = self.eval(func.arguments)
@@ -155,7 +155,7 @@ class Interpreter:
             raise RuntimeError(f"{func.name}: {e}")
 
 
-    def eval_print(self, printstmt:ast.PrintStmt):
+    def _print(self, printstmt:ast.PrintStmt):
         for item in printstmt.printlist:
             val = self.eval(item.expression)
             if item.sep == ',':
@@ -179,7 +179,7 @@ class Interpreter:
             raise error.Err(f"Unexpected destination {dest!r}")
 
 
-    def eval_goto(self, goto:ast.GotoStmt):
+    def _goto(self, goto:ast.GotoStmt):
         dest = self.eval(goto.destination)
         newidx = self._calc_go(dest)
         self.cursor = newidx
@@ -199,14 +199,14 @@ class Interpreter:
         self.cursor = pos
 
 
-    def eval_if(self, stmt:ast.IfStmt):
+    def _if(self, stmt:ast.IfStmt):
         cond = self.eval(stmt.test)
         if cond:
             self.exec_statement(stmt.consequent)
         elif stmt.alternate:
             self.exec_statement(stmt.alternate)
 
-    def eval_input(self, stmt:ast.InputStmt):
+    def _input(self, stmt:ast.InputStmt):
         for var in stmt.varlist:
             line = self.input.readline().strip()
 
@@ -226,7 +226,7 @@ class Interpreter:
             self.setvar(var.name, value)
 
 
-    def eval_assignment(self, expr:ast.AssignmentExpr):
+    def _assignment(self, expr:ast.AssignmentExpr):
         name = expr.left.name
         value = self.eval(expr.right)
 
@@ -252,7 +252,7 @@ class Interpreter:
         self.setvar(name, var)
         return var
                     
-    def eval_binary_expr(self, expr:ast.BinaryExpr):
+    def _binary_expr(self, expr:ast.BinaryExpr):
         rhs = self.eval(expr.right)
         lhs = self.eval(expr.left)
 
@@ -273,7 +273,7 @@ class Interpreter:
                 return lhs < rhs
             case '<=':
                 return lhs <= rhs
-            case '<>'|'><'|'!=':
+            case '<>'|'><':
                 return lhs != rhs
             case '==':
                 return lhs == rhs
@@ -285,7 +285,7 @@ class Interpreter:
         raise RuntimeError(f"bad binary operator '{expr.operator}'")
 
 
-    def eval_unary_expr(self, expr:ast.UnaryExpr):
+    def _unary_expr(self, expr:ast.UnaryExpr):
         arg = self.eval(expr.argument)
 
         match expr.operator:
