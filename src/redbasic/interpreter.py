@@ -1,4 +1,5 @@
 import sys, os, pprint
+import math
 from typing import TextIO as Stream
 from . import ast, error
 from .parser import Parser, parse_int
@@ -23,10 +24,10 @@ class Interpreter:
 
     TEMP_VAR = '_'
 
-    def __init__(self, parser:Parser = None, out:Stream=sys.stdout, in_:Stream=sys.stdin):
+    def __init__(self, parser:Parser = None, textout:Stream=sys.stdout, textin:Stream=sys.stdin):
         self.parser = parser if parser is not None else Parser()
-        self.output = out
-        self.input = in_
+        self.output = textout
+        self.input = textin
         self.variables = {}
         self.substack = []
         self.ast = ast.Program([])
@@ -60,6 +61,8 @@ class Interpreter:
         match stmt:
             case ast.VariableDecl():
                 name = stmt.iden.name
+                if name in self.variables:
+                    raise RuntimeError(f"'{name}' already defined")
                 value = self.eval(stmt.init)
                 self.setvar(name, value)
             case ast.ExpressionStmt():
@@ -139,18 +142,18 @@ class Interpreter:
 
     def _func(self, func:ast.Func):
         try:
-            if func.name == 'rnd':
-                args = self.eval(func.arguments)
+            args = self.eval(func.arguments)
 
+            if func.name == 'rnd':
                 n = builtin_rnd(*args)
                 return n
             elif func.name == 'usr':
-                args = self.eval(func.arguments)
                 builtin_usr(self.output, *args)
             elif func.name == 'pow':
-                args = self.eval(func.arguments)
                 n = builtin_pow(*args)
                 return n
+            elif func.name == 'sqrt':
+                return math.sqrt(*args)
         except AttributeError as e:
             raise RuntimeError(f"{func.name}: {e}")
 

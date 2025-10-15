@@ -481,4 +481,7 @@ class Parser:
             n -= 1
 
     def _bad_syntax(self, msg):
-        return error.BadSyntax(msg, self.linenum)
+        e = error.BadSyntax(msg, self.linenum)
+        e.text = self.code
+        e.offset = self.cursor
+        return e

@@ -83,7 +83,7 @@ basic_spec = {
     Token.equality_op: rxc(r'(==|<>|><)'),
 
     # assignment
-    Token.assignment_complex: rxc(r'[+\-*/]='),
+    Token.assignment_complex: rxc(r'[-+*/]='),
     Token.assignment: rxc(r'='),
 
     # relational
@@ -118,7 +118,7 @@ basic_spec = {
     Token.kw_run: rxc(r"\bRUN\b", re.IGNORECASE),
 
     # builtin functions
-    Token.f_builtin: rxc(r"\b(USR|RND|POW)\b", re.IGNORECASE),
+    Token.f_builtin: rxc(r"\b(USR|RND|POW|SQRT)\b", re.IGNORECASE),
 
     # identifiers
     #   named labels

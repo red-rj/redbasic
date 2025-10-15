@@ -1,5 +1,5 @@
 import unittest, io, random
-import re
+import functools
 # HACK: fix path and imports
 import pathlib, sys
 sys.path.append(str(pathlib.Path(__file__).absolute().parent.parent/'src'))
@@ -16,7 +16,7 @@ class Test(unittest.TestCase):
     def setUp(self):
         self.input = io.StringIO()
         self.output = io.StringIO()
-        self.interp = Interpreter(out=self.output, in_=self.input)
+        self.interp = Interpreter(textout=self.output, textin=self.input)
         
 
     def tearDown(self):
