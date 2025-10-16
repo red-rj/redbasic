@@ -75,7 +75,7 @@ class Parser:
             
             return tok, tvalue
         
-        raise error.BadSyntax(f"Unexpected '{self.code[self.cursor]}'", self.linenum)
+        raise self._bad_syntax(f"Unexpected '{self.code[self.cursor]}'")
     
 
     def eat(self, expected:Token = None) -> tuple[Token, str]:
@@ -111,7 +111,6 @@ class Parser:
         return Program(self.line_list())
     
     def line_stmt(self):
-        self.skip(Token.eol)
         token, _ = self.lookahead
         if token == Token.named_label:
             _, name = self.eat()
@@ -119,7 +118,6 @@ class Parser:
             stmt = None
             try:
                 stmt = self.statement()
-                self.skip(Token.eol)
             except Exception:
                 pass
 
@@ -138,13 +136,14 @@ class Parser:
             pass
 
         stmt = self.statement()
-        self.skip(Token.eol)
         return Line(stmt, linenum)
 
     def line_list(self):
         lines = []
         while self.lookahead[0] != Token.eof:
+            self.skip(Token.eol)
             lines.append(self.line_stmt())
+            self.skip(Token.eol)
 
         return lines
             
@@ -192,7 +191,7 @@ class Parser:
         # print list
         # TODO: Tokenize separetor as print_sep: r"[,;]"
         plist = []
-        while self.lookahead[0]!=Token.eof and not is_keyword(self.lookahead[0]):
+        while not (self.lookahead[0] in (Token.eol, Token.eof) or is_keyword(self.lookahead[0])):
             expr = self.single_expression()
             if self.lookahead[0] in (Token.comma, Token.semicolon):
                 _, sep = self.eat()
@@ -483,5 +482,4 @@ class Parser:
     def _bad_syntax(self, msg):
         e = error.BadSyntax(msg, self.linenum)
         e.text = self.code
-        e.offset = self.cursor
         return e
