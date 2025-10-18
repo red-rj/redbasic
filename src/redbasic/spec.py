@@ -58,6 +58,7 @@ class Token(StrEnum):
     kw_rem = 'rem'
     kw_true = 'true'
     kw_false = 'false'
+    kw_new = 'new'
     # symbols
     l_paren = '('
     r_paren = ')'
@@ -116,6 +117,7 @@ basic_spec = {
     Token.kw_clear: rxc(r"\bCLEAR\b", re.IGNORECASE),
     Token.kw_list: rxc(r"\bLIST\b", re.IGNORECASE),
     Token.kw_run: rxc(r"\bRUN\b", re.IGNORECASE),
+    Token.kw_new: rxc(r"\bNEW\b", re.IGNORECASE),
 
     # builtin functions
     Token.f_builtin: rxc(r"\b(USR|RND|POW|SQRT)\b", re.IGNORECASE),

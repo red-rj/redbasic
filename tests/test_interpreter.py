@@ -79,13 +79,17 @@ class ScriptTests(Test):
     def test_math(tc):
         tc.execScript("math.bas")
         var = tc.interp.variables
-        names = ('R_add1','R_add2', 'R_sub1','R_sub2', 'R_div1','R_div2', 'R_mul1','R_mul2')
-        expected = (80, 80, 74, 74, 37, 37, 111, 111)
-        assert len(names)==len(expected)
+        results = {
+            'R_add':80,
+            'R_sub':74,
+            'R_div':37,
+            'R_mul':111,
+        }
 
-        map = dict(zip(names, expected))
-        for key in map:
-            tc.assertEqual(var[key], map[key], key)
+        for key in results:
+            for n in range(1,3):
+                name = f"{key}{n}"
+                tc.assertEqual(var[name], results[key])
         
     def test_if(tc):
         tc.execScript("if.bas")

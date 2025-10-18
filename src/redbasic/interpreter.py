@@ -82,14 +82,16 @@ class Interpreter:
                 self._if(stmt)
             case ast.InputStmt():
                 self._input(stmt)
+            case ast.ReturnStmt():
+                self._return()
             case ast.ListStmt():
                 self._list(stmt)
             case ast.ClearStmt():
                 self._clear()
-            case ast.ReturnStmt():
-                self._return()
             case ast.RunStmt():
                 self._run()
+            case ast.NewStmt():
+                self._new()
             case _:
                 raise NotImplementedError(f"unsupported statement {stmt}")
 
@@ -120,6 +122,11 @@ class Interpreter:
 
     def _run(self):
         self.exec()
+
+    def _new(self):
+        self.output.write("New program\n\n")
+        self.ast.body.clear()
+
 
     def eval(self, expr:ast.Expr) -> int|float|str|list:
         match expr:
@@ -314,39 +321,62 @@ class Interpreter:
         self.variables[name] = value
 
 
+    def repl(self, welcome, prompt="> "):
+        if not self.input.isatty():
+            raise RuntimeError("input stream is not interactive")
+        
+        from functools import partial
+
+        myprint = partial(print, file=self.output)
+        
+        self.isrepl = 1
+        myprint(welcome, "Ctrl+C to exit", sep='\n')
+        
+        try:
+            body = self.ast.body
+            while 1:
+                myprint(prompt, end='', flush=True)
+
+                code = self.input.readline()
+                if not code:
+                    myprint()
+                    continue
+                
+                line = self.parser.parse_line(code)
+
+                if isinstance(line.statement, ast.InteractiveStmt):
+                    # interactive statements
+                    self.exec_line(line)
+                else:
+                    # code statements
+                    # lines that don't start with a linenum are executed
+                    # lines that start with a linenum are added to the program
+                    ff = [ x for x in body if x.linenum == line.linenum ]
+                    if ff:
+                        i = body.index(ff[0])
+                        # replace line
+                        body[i] = line
+                    
+                    if line.linenum and not ff:
+                        # new line
+                        body.append(line)
+                    else:
+                        self.exec_line(line)
+        except EOFError:
+            pass
+        except KeyboardInterrupt:
+            pass
+
+        del self.isrepl
+        myprint()
+
+
+
+
 def repl(prog:ast.Program = None):
     interp = Interpreter()
     if prog:
         interp.ast = prog
-    body = interp.ast.body
-    print("redbasic REPL v0.2")
-    print("Ctrl+C to exit")
-    try:
-        while 1:
-            code = input("> ")
-            line = interp.parser.parse_line(code)
+    
+    interp.repl("redbasic REPL v0.2", "> ")
 
-            # interactive statements
-            if isinstance(line.statement, ast.InteractiveStmt):
-                interp.exec_line(line)
-            else:
-                # code statements
-                # lines that don't start with a linenum are executed
-                # lines that start with a linenum are added to the program
-                replaced = False
-                for i, a in enumerate(body):
-                    if a.linenum == line.linenum:
-                        # replace line
-                        body[i] = line
-                        replaced = True
-                        break
-                if not replaced and line.linenum:
-                    body.append(line)
-                else:
-                    interp.exec_line(line)
-    except EOFError:
-        pass
-    except KeyboardInterrupt:
-        pass
-
-    print()

@@ -173,6 +173,9 @@ class Parser:
                 return self.end_stmt()
             case Token.kw_return:
                 return self.return_stmt()
+            case Token.kw_new:
+                self.eat()
+                return NewStmt()
             case _:
                 e = self.expression_stmt()
                 if e.expression is None:
@@ -331,7 +334,7 @@ class Parser:
                 if not isinstance(left, Identifier):
                     raise self._bad_syntax('Invalid left-hand side in assignment expression')
                 return AssignmentExpr(operator=node[1], left=left, right=self.assignment_expr())
-            except error.BadSyntax:
+            except SyntaxError:
                 pass
         
         raise self._bad_syntax(f"expected one of {refrigirator}, got {self.lookahead}")
@@ -480,6 +483,10 @@ class Parser:
             n -= 1
 
     def _bad_syntax(self, msg):
-        e = error.BadSyntax(msg, self.linenum)
-        e.text = self.code
+        e = SyntaxError(msg)
+        e.lineno = self.linenum
+        lines = self.code.splitlines()
+        e.text = lines[self.linenum-1]
+        e.offset = 0
+        e.end_offset = 1
         return e

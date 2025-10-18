@@ -165,6 +165,9 @@ class ListStmt(InteractiveStmt):
     arguments:list[Expr]
     mode:str
 
+class NewStmt(InteractiveStmt):
+    pass
+
 # reconstruct util
 
 def reconstruct_expr(expr, ss:TextIO):
