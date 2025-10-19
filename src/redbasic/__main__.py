@@ -1,4 +1,3 @@
-import os, sys
 import argparse
 import pprint
 from . import ast, Parser, Interpreter, repl
@@ -29,7 +28,7 @@ def main():
         repl(prog)
         exit()
 
-    interp = Interpreter(p)
+    interp = Interpreter()
     interp.exec_program(Ast)
 
     if args.dump:

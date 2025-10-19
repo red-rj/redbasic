@@ -59,6 +59,9 @@ class interpreterTests(unittest.TestCase):
         tc.interp.exec()
         tc.assertEqual(tc.interp.variables["_"], 2025)
 
+    def test_no_repl_on_noninteractive_streams(tc):
+        with tc.assertRaises(RuntimeError):
+            tc.interp.repl("oh no", "not a tty!")
 
 class ScriptTests(interpreterTests):
     testdir = pathlib.Path(__file__).parent

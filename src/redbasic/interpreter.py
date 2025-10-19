@@ -16,8 +16,6 @@ def builtin_rnd(min:int, max:int=None):
 def builtin_usr(*args):
     raise NotImplementedError("USR func")
 
-def builtin_pow(base, exp):
-    return base ** exp
 
 
 class Interpreter:
@@ -25,8 +23,11 @@ class Interpreter:
 
     TEMP_VAR = '_'
 
-    def __init__(self, parser:Parser = None, textout:Stream=sys.stdout, textin:Stream=sys.stdin):
-        self.parser = parser if parser is not None else Parser()
+    def __init__(self, textout:Stream=sys.stdout, textin:Stream=sys.stdin):
+        assert textout.writable()
+        assert textin.readable()
+
+        self.parser = Parser()
         self.output = textout
         self.input = textin
         self.variables = {}
@@ -92,7 +93,27 @@ class Interpreter:
                 self._new()
             case _:
                 raise NotImplementedError(f"unsupported statement {stmt}")
+            
+    def eval(self, expr:ast.Expr) -> int|float|str|list:
+        match expr:
+            case ast.Literal():
+                return expr.value
+            case list():# SequenceExpr
+                return [self.eval(e) for e in expr] 
+            case ast.AssignmentExpr():
+                return self._assignment(expr)
+            case ast.BinaryExpr():
+                return self._binary_expr(expr)
+            case ast.UnaryExpr():
+                return self._unary_expr(expr)
+            case ast.Identifier():
+                return self.getvar(expr.name)
+            case ast.Func():
+                return self._func(expr)
+            case _:        
+                raise NotImplementedError(f"unsupported expression {expr}")
 
+                
     def _list(self, stmt:ast.ListStmt):
         args = self.eval(stmt.arguments) if stmt.arguments else None
         if isinstance(args, list):
@@ -121,26 +142,6 @@ class Interpreter:
     def _new(self):
         self.output.write("New program\n\n")
         self.ast.body.clear()
-
-
-    def eval(self, expr:ast.Expr) -> int|float|str|list:
-        match expr:
-            case ast.Literal():
-                return expr.value
-            case list():# SequenceExpr
-                return [self.eval(e) for e in expr] 
-            case ast.AssignmentExpr():
-                return self._assignment(expr)
-            case ast.BinaryExpr():
-                return self._binary_expr(expr)
-            case ast.UnaryExpr():
-                return self._unary_expr(expr)
-            case ast.Identifier():
-                return self.getvar(expr.name)
-            case ast.Func():
-                return self._func(expr)
-            case _:        
-                raise NotImplementedError(f"unsupported expression {expr}")
 
     def _func(self, func:ast.Func):
         try:
@@ -328,9 +329,8 @@ class Interpreter:
             raise RuntimeError("input stream is not interactive")
         
         from functools import partial
-
         myprint = partial(print, file=self.output)
-        
+
         self.isrepl = 1
         myprint(welcome, "Ctrl+C to exit", sep='\n')
         

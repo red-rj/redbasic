@@ -170,14 +170,18 @@ class NewStmt(InteractiveStmt):
 
 # reconstruct util
 
-def reconstruct_expr(expr, ss:TextIO):
+def reconstruct_expr(expr, ss:TextIO=None):
+    doret = ss is None
+    if doret:
+        ss = io.StringIO()
+    
     match expr:
         case list(): #TODO: SequenceExpr
             for e in expr:
                 reconstruct_expr(e, ss)
                 ss.write(',')
             pos = ss.tell()
-            ss.seek(pos-1) # remove last ,
+            ss.truncate(pos-1) # remove last ,
         case Identifier():
             ss.write(expr.name)
         case Func():
@@ -198,12 +202,16 @@ def reconstruct_expr(expr, ss:TextIO):
             reconstruct_expr(expr.right, ss)
         case _:
             raise RuntimeError(f"cannot recontruct {expr!r}")
+    
+    if doret:
+        return ss.getvalue()
 
 
 def reconstruct(program:Program):
     "reconstruct an aproximation of source code from an AST tree"
+    from functools import partial
     ss = io.StringIO()
-    recon = lambda e: reconstruct_expr(e, ss)
+    recon = partial(reconstruct_expr, ss=ss)
 
     for a in program.body:
         stmt = a.statement
