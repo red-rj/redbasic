@@ -4,6 +4,7 @@ from typing import TextIO as Stream
 from . import ast, error
 from .parser import Parser, parse_int
 
+type Error = Exception
 
 def builtin_rnd(min:int, max:int=None):
     import random
@@ -31,8 +32,6 @@ class Interpreter:
         self.variables = {}
         self.substack = []
         self.ast = ast.Program([])
-        self.allkeys = None
-        self.cursor = 0
 
 
     def set_source(self, code:str):
@@ -45,8 +44,7 @@ class Interpreter:
 
     def exec_program(self, prog:ast.Program):
         self.ast = prog
-        self.allkeys = [ x.linenum for x in self.ast.body ]
-        maxcursor = len(self.allkeys)
+        maxcursor = len(self.ast.body)
         self.cursor = 0
 
         while self.cursor < maxcursor:
@@ -89,7 +87,7 @@ class Interpreter:
             case ast.ClearStmt():
                 self._clear()
             case ast.RunStmt():
-                self._run()
+                self.exec()
             case ast.NewStmt():
                 self._new()
             case _:
@@ -120,9 +118,6 @@ class Interpreter:
         if self.input.isatty():
             os.system('cls' if os.name=='nt' else 'clear')
 
-    def _run(self):
-        self.exec()
-
     def _new(self):
         self.output.write("New program\n\n")
         self.ast.body.clear()
@@ -152,13 +147,11 @@ class Interpreter:
             args = self.eval(func.arguments)
 
             if func.name == 'rnd':
-                n = builtin_rnd(*args)
-                return n
+                return builtin_rnd(*args)
             elif func.name == 'usr':
-                builtin_usr(self.output, *args)
+                return builtin_usr(*args)
             elif func.name == 'pow':
-                n = builtin_pow(*args)
-                return n
+                return pow(*args)
             elif func.name == 'sqrt':
                 return math.sqrt(*args)
         except AttributeError as e:
@@ -183,30 +176,34 @@ class Interpreter:
         if isinstance(dest, str):
             dest = hash(dest)
 
-        try:        
-            return self.allkeys.index(dest)
-        except ValueError:
-            raise error.Err(f"Unexpected destination {dest!r}")
+        if dest == 0:
+            raise Error("0 is not a valid linenum")
+
+        linenums = (x.linenum for x in self.ast.body)
+        i = 0
+        for l in linenums:
+            if dest == l:
+                return i
+            else:
+                i += 1
+
+        raise Error(f"Unexpected destination {dest!r}")
 
 
     def _goto(self, goto:ast.GotoStmt):
         dest = self.eval(goto.destination)
-        newidx = self._calc_go(dest)
-        self.cursor = newidx
+        self.cursor = self._calc_go(dest)
 
     def _gosub(self, gosub:ast.GosubStmt):
+        if len(self.substack) > 255:
+            raise RecursionError()
+
         dest = self.eval(gosub.destination)
         self.substack.append(self.cursor)
-        if len(self.substack) > 255:
-            raise RuntimeError("recursion limit")
-
-        newidx = self._calc_go(dest)
-        self.cursor = newidx
+        self.cursor = self._calc_go(dest)
 
     def _return(self):
-        pos = self.substack[-1]
-        self.substack.pop()
-        self.cursor = pos
+        self.cursor = self.substack.pop()
 
 
     def _if(self, stmt:ast.IfStmt):
@@ -220,19 +217,24 @@ class Interpreter:
         for var in stmt.varlist:
             line = self.input.readline().strip()
 
-            converters = parse_int, float, str
-            value = None
+            try:
+                value = float(line)
+                if value.is_integer():
+                    value = int(value)
+                self.setvar(var.name, value)
+                continue
+            except ValueError:
+                pass
 
-            for conv in  converters:
-                try:
-                    value = conv(line)
-                    break
-                except ValueError:
-                    continue
+            try:
+                value = parse_int(line)
+                self.setvar(var.name, value)
+                continue
+            except ValueError:
+                pass
 
-            if value is None:
-                raise RuntimeError("Bad input")
-            
+            # str
+            value = line
             self.setvar(var.name, value)
 
 
