@@ -6,19 +6,14 @@ sys.path.append(str(pathlib.Path(__file__).absolute().parent.parent/'src'))
 
 from redbasic import Interpreter
 
-# predictible seed for testing rnd()
-random.seed(1993)
 
-
-class Test(unittest.TestCase):
-    testdir = pathlib.Path(__file__).parent
+class interpreterTests(unittest.TestCase):
     
     def setUp(self):
         self.input = io.StringIO()
         self.output = io.StringIO()
         self.interp = Interpreter(textout=self.output, textin=self.input)
         
-
     def tearDown(self):
         self.input.truncate(0)
         self.output.truncate(0)
@@ -26,20 +21,13 @@ class Test(unittest.TestCase):
         self.output.seek(0)
 
     def setInput(self, *lines):
-        self.input.truncate(0)
         self.input.seek(0)
         for a in lines:
-            self.input.write(str(a)+'\n')
+            self.input.write(f'{a}\n')
+        self.input.truncate()
         self.input.seek(0)
-  
-    def execScript(self, script):
-        with open(self.testdir/script, encoding='utf-8') as f:
-            code = f.read()
-            self.interp.set_source(code)
-            self.interp.exec()
 
 
-class ScriptTests(Test):
     def test_print(tc):
         code = "print \"olá\""
         tc.interp.set_source(code)
@@ -53,13 +41,8 @@ class ScriptTests(Test):
         tc.interp.exec()
         tc.assertDictEqual({'name':'Pedro', 'age':32}, tc.interp.variables)
 
-    def test_read_sum_ints(tc):
-        tc.setInput(35)
-        tc.execScript("sum-ints.bas")
-        tc.assertEqual("Result = 69\n", tc.output.getvalue())
-        tc.assertEqual(tc.interp.variables["result"], 69)
-
     def test_rnd(tc):
+        random.seed(1993)
         code = "69 let r = rnd(1, 100)"
         tc.interp.set_source(code)
         tc.interp.exec()
@@ -75,6 +58,23 @@ class ScriptTests(Test):
         tc.interp.set_source("1  32+1993")
         tc.interp.exec()
         tc.assertEqual(tc.interp.variables["_"], 2025)
+
+
+class ScriptTests(interpreterTests):
+    testdir = pathlib.Path(__file__).parent
+
+    def execScript(self, script):
+        with open(self.testdir/script, encoding='utf-8') as f:
+            code = f.read()
+            self.interp.set_source(code)
+            self.interp.exec()
+
+
+    def test_read_sum_ints(tc):
+        tc.setInput(35)
+        tc.execScript("sum-ints.bas")
+        tc.assertEqual("Result = 69\n", tc.output.getvalue())
+        tc.assertEqual(tc.interp.variables["result"], 69)
 
     def test_math(tc):
         tc.execScript("math.bas")
@@ -107,3 +107,6 @@ class ScriptTests(Test):
         tc.assertRegex(out, r"else or")
         tc.assertNotRegex(out, r"error")
 
+
+if __name__=='__main__':
+    unittest.main()

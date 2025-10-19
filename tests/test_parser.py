@@ -367,6 +367,31 @@ class functionTests(parserTestCase):
                    linenum=42)])
         )
 
-# --- exec ---
+    def test_pow(tc):
+        tc.assertAst(
+            '42  POW(2, 10)',
+            Program([Line(
+                linenum=42, 
+                statement=ExpressionStmt(
+                    Func(name='pow', arguments=[IntLiteral(value=2),
+                                               IntLiteral(value=10)])
+                    )
+                )
+            ])
+        )
+    
+    def test_sqrt(tc):
+        tc.assertAst(
+            '42  SQRT(4)',
+            Program([Line(
+                linenum=42, 
+                statement=ExpressionStmt(
+                    Func(name='sqrt', arguments=[IntLiteral(value=4)])
+                    )
+                )
+            ])
+        )
+
+
 if __name__=='__main__':
     unittest.main()

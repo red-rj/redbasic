@@ -475,16 +475,16 @@ class Parser:
     def undo(self, n=1):
         assert len(self.stack) >= n
         while n:
-            look,cursor,line = self.stack[-1]
+            look,cursor,line = self.stack.pop()
             self.lookahead = look
             self.cursor = cursor
             self.linenum = line
-            self.stack.pop()
             n -= 1
 
     def _bad_syntax(self, msg):
         e = SyntaxError(msg)
         e.lineno = self.linenum
+        e.end_lineno = e.lineno
         lines = self.code.splitlines()
         e.text = lines[self.linenum-1]
         e.offset = 0

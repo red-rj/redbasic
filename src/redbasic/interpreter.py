@@ -4,7 +4,7 @@ from typing import TextIO as Stream
 from . import ast, error
 from .parser import Parser, parse_int
 
-type Error = Exception
+type Error = error.Err
 
 def builtin_rnd(min:int, max:int=None):
     import random
