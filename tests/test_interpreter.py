@@ -110,6 +110,13 @@ class ScriptTests(interpreterTests):
         tc.assertRegex(out, r"else or")
         tc.assertNotRegex(out, r"error")
 
+    def test_goto(tc):
+        tc.execScript("goto.bas")
+        out = tc.output.getvalue()
+        var = tc.interp.variables
+        tc.assertRegex(out, "start")
+        tc.assertEqual(var["tmp"], 2)
+
 
 if __name__=='__main__':
     unittest.main()

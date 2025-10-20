@@ -51,6 +51,8 @@ class Interpreter:
         while self.cursor < maxcursor:
             item = self.ast.body[self.cursor]
             self.exec_statement(item.statement)
+            if isinstance(item.statement, (ast.GotoStmt, ast.ReturnStmt, ast.EndStmt)):
+                continue
             self.cursor += 1
 
     def exec(self):
@@ -93,6 +95,7 @@ class Interpreter:
                 self._new()
             case _:
                 raise NotImplementedError(f"unsupported statement {stmt}")
+        
             
     def eval(self, expr:ast.Expr) -> int|float|str|list:
         match expr:
