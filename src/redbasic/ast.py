@@ -271,7 +271,8 @@ def reconstruct(program:Program):
     for a in program.body:
         stmt = a.statement
         if isinstance(a, Label):
-            ss.write(f'{a.name}:')
+            lbl = a.name+':'
+            ss.write(f'{lbl:<4}')
         else:
             ss.write(f'{a.linenum:<4d} ')
 

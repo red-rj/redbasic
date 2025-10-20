@@ -101,7 +101,7 @@ basic_spec = {
 
     Token.logical_not: rxc(r'!'),
     Token.logical_and: rxc(r'&&'),
-    Token.logical_or: rxc(r'[|]{2}'),
+    Token.logical_or: rxc(r'\|\|'),
 
     # keywords
     Token.kw_print: rxc(r"\b(PRINT|PR)\b", re.IGNORECASE),

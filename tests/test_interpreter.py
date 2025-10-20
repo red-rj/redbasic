@@ -2,13 +2,15 @@ import unittest, io, random
 import functools
 # HACK: fix path and imports
 import pathlib, sys
-sys.path.append(str(pathlib.Path(__file__).absolute().parent.parent/'src'))
+scriptdir = pathlib.Path(__file__).absolute()
+sys.path.append(str(scriptdir.parent.parent/'src'))
 
 from redbasic import Interpreter
 
 
-class interpreterTests(unittest.TestCase):
-    
+class TestCase(unittest.TestCase):
+    testdir = scriptdir.parent
+            
     def setUp(self):
         self.input = io.StringIO()
         self.output = io.StringIO()
@@ -27,7 +29,14 @@ class interpreterTests(unittest.TestCase):
         self.input.truncate()
         self.input.seek(0)
 
+    def execScript(self, script):
+        with open(self.testdir/script, encoding='utf-8') as f:
+            code = f.read()
+            self.interp.set_source(code)
+            self.interp.exec()
 
+
+class interpreterTests(TestCase):
     def test_print(tc):
         code = "print \"olá\""
         tc.interp.set_source(code)
@@ -63,16 +72,7 @@ class interpreterTests(unittest.TestCase):
         with tc.assertRaises(RuntimeError):
             tc.interp.repl("oh no", "not a tty!")
 
-class ScriptTests(interpreterTests):
-    testdir = pathlib.Path(__file__).parent
-
-    def execScript(self, script):
-        with open(self.testdir/script, encoding='utf-8') as f:
-            code = f.read()
-            self.interp.set_source(code)
-            self.interp.exec()
-
-
+class ScriptTests(TestCase):
     def test_read_sum_ints(tc):
         tc.setInput(35)
         tc.execScript("sum-ints.bas")
