@@ -16,7 +16,6 @@ def parse_int(string:str):
 def is_literal(tok:Token):
     return tok == Token.string_literal or tok == Token.floatingpoint or tok == Token.integer
 
-
 def is_assignment_op(tok:Token):
     return tok == Token.assignment or tok == Token.assignment_complex
 
@@ -26,7 +25,7 @@ def is_operator(tok:Token):
     return is_assignment_op(tok) or tok in other_ops
 
 def is_keyword(tok:Token):
-    return tok in (kw for kw in Token if kw.name.startswith('kw_'))
+    return tok.name.startswith('kw_')
 
 
 # TODO: find a way to do better tokenization
@@ -70,7 +69,7 @@ class Parser:
             if tok == Token.eol:
                 self.linenum += 1
 
-            if tok in (None, Token.comment, Token.eol):
+            if tok in (None, Token.comment):
                 return self.next_token()
             
             return tok, tvalue
@@ -270,20 +269,23 @@ class Parser:
         return RunStmt(args)
 
     def list_stmt(self):
-        # list MODE or list EXPRLIST MODE
+        # list [START,END] [MODE=code]
         self.eat(Token.kw_list)
         mode = 'code'
         args = None
 
-        # list MODE or list NUM,NUM MODE
-        # TODO: Tokenize as list_mode: r"code|ast"
+        if self.lookahead[0] == Token.integer:
+            start = self.primary_expr()
+            if self.lookahead[0] == Token.comma:
+                self.eat()
+                end = self.primary_expr()
+                args = [ start, end ]
+            else:
+                args = start
+        
         if self.lookahead[0] == Token.identifier:
             mode = self.identifier().name
-        else:
-            args = self.expression()
-            if self.lookahead[0] == Token.identifier:
-                mode = self.identifier().name
-
+        
         return ListStmt(args, mode)
     
     def builtin_func(self, func):

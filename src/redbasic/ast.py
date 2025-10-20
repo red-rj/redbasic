@@ -1,5 +1,5 @@
 # redbasic AST
-import io
+import io, functools
 from dataclasses import dataclass
 from typing import TextIO
 
@@ -171,9 +171,10 @@ class NewStmt(InteractiveStmt):
 # reconstruct util
 
 def reconstruct_expr(expr, ss:TextIO=None):
-    doret = ss is None
-    if doret:
+    if ss is None:
         ss = io.StringIO()
+        reconstruct_expr(expr, ss)
+        return ss.getvalue()
     
     match expr:
         case list(): #TODO: SequenceExpr
@@ -203,67 +204,78 @@ def reconstruct_expr(expr, ss:TextIO=None):
         case _:
             raise RuntimeError(f"cannot recontruct {expr!r}")
     
-    if doret:
+
+def reconstruct_stmt(stmt:Stmt, ss:TextIO=None):
+    if ss is None:
+        ss = io.StringIO()
+        reconstruct_stmt(stmt, ss)
         return ss.getvalue()
+
+    recon = functools.partial(reconstruct_expr, ss=ss)
+
+    match stmt:
+        case PrintStmt():
+            ss.write('print ')
+            for pi in stmt.printlist:
+                recon(pi.expression)
+                if pi.sep:
+                    ss.write(pi.sep)
+        case InputStmt():
+            ss.write("input ")
+            recon(stmt.varlist)
+        case GotoStmt():
+            ss.write("goto ")
+            recon(stmt.destination)
+        case GosubStmt():
+            ss.write("gosub ")
+            recon(stmt.destination)
+        case VariableDecl():
+            ss.write('let ')
+            recon(stmt.iden)
+            ss.write('=')
+            recon(stmt.init)
+        case IfStmt():
+            ss.write('if ')
+            recon(stmt.test)
+            ss.write(' then ')
+            reconstruct_stmt(stmt.consequent, ss)
+            if stmt.alternate:
+                ss.write(' else ')
+                reconstruct_stmt(stmt.alternate, ss)
+        case ExpressionStmt():
+            recon(stmt.expression)
+        case ReturnStmt():
+            ss.write('return')
+        case ClearStmt():
+            ss.write('clear')
+        case EndStmt():
+            ss.write('end')
+        case RunStmt():
+            ss.write('run')
+        case ListStmt():
+            ss.write('list ')
+            if stmt.arguments:
+                recon(stmt.arguments)
+            ss.write(stmt.mode)
+        case None:
+            # BUG?
+            pass
+        case _:
+            raise RuntimeError(f"cannot recontruct {stmt!r}")    
 
 
 def reconstruct(program:Program):
     "reconstruct an aproximation of source code from an AST tree"
-    from functools import partial
     ss = io.StringIO()
-    recon = partial(reconstruct_expr, ss=ss)
 
     for a in program.body:
         stmt = a.statement
         if isinstance(a, Label):
-            ss.write(f'{a.name}: ')
+            ss.write(f'{a.name}:')
         else:
             ss.write(f'{a.linenum:<4d} ')
 
-        match stmt:
-            case PrintStmt():
-                ss.write('print ')
-                for pi in stmt.printlist:
-                    recon(pi.expression)
-                    if pi.sep:
-                        ss.write(pi.sep)
-            case InputStmt():
-                ss.write("input ")
-                recon(stmt.varlist)
-            case GotoStmt():
-                ss.write("goto ")
-                recon(stmt.destination)
-            case GosubStmt():
-                ss.write("gosub ")
-                recon(stmt.destination)
-            case VariableDecl():
-                ss.write('let ')
-                recon(stmt.iden)
-                ss.write('=')
-                recon(stmt.init)
-            case IfStmt():
-                ss.write('if ')
-                recon(stmt.test)
-                ss.write(' then')
-                recon(stmt.consequent)
-                if stmt.alternate:
-                    ss.write(' else ')
-                    recon(stmt.alternate)
-            case ExpressionStmt():
-                recon(stmt.expression)
-            case ReturnStmt():
-                ss.write('return')
-            case ClearStmt():
-                ss.write('clear')
-            case EndStmt():
-                ss.write('end')
-            case RunStmt():
-                ss.write('run')
-            case ListStmt():
-                ss.write('list ')
-                recon(stmt.arguments)
-                ss.write(stmt.mode)
-            case _:
-                raise RuntimeError(f"cannot recontruct {stmt!r}")
+        reconstruct_stmt(stmt, ss)
+
         ss.write('\n')
     return ss.getvalue()

@@ -17,7 +17,7 @@
             "type": "debugpy",
             "request": "launch",
             "program": "-m src.redbasic",
-            "args": "-if tests/sum-ints.bas",
+            "args": "-if Samples/appendix-e.bas",
             "console": "integratedTerminal",
             "justMyCode": true
         },
