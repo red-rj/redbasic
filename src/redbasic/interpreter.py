@@ -116,18 +116,17 @@ class Interpreter:
             case _:        
                 raise NotImplementedError(f"unsupported expression {expr}")
 
-                
+
     def _list(self, stmt:ast.ListStmt):
         args = self.eval(stmt.arguments) if stmt.arguments else None
         if isinstance(args, list):
-            start, end = args
+            sl = slice(*args)
         elif args:
-            start, end = args, len(self.ast.body)
+            sl = slice(args, args+1)
         else:
-            start = 0
-            end = len(self.ast.body)
+            sl = slice(0, None)
         
-        body = self.ast.body[start:end]
+        body = self.ast.body[sl]
         tmp = ast.Program(body)
         
         if stmt.mode == 'code':
@@ -139,7 +138,7 @@ class Interpreter:
             raise RuntimeError(f"invalid list mode '{stmt.mode}'")
 
     def _clear(self):
-        if self.input.isatty():
+        if self.output.isatty():
             os.system('cls' if os.name=='nt' else 'clear')
 
     def _new(self):
@@ -183,13 +182,9 @@ class Interpreter:
         if dest == 0:
             raise Error("0 is not a valid linenum")
 
-        linenums = (x.linenum for x in self.ast.body)
-        i = 0
-        for l in linenums:
+        for i, l in enumerate(x.linenum for x in self.ast.body):
             if dest == l:
                 return i
-            else:
-                i += 1
 
         raise Error(f"Unexpected destination {dest!r}")
 
@@ -328,14 +323,15 @@ class Interpreter:
 
 
     def repl(self, welcome, prompt="> "):
+        from functools import partial
+        
         if not self.input.isatty():
             raise RuntimeError("input stream is not interactive")
         
-        from functools import partial
         myprint = partial(print, file=self.output)
 
         self.isrepl = 1
-        myprint(welcome, "Ctrl+C to exit", sep='\n')
+        myprint(welcome)
         
         try:
             body = self.ast.body
@@ -343,7 +339,7 @@ class Interpreter:
                 myprint(prompt, end='', flush=True)
 
                 code = self.input.readline()
-                if not code:
+                if not code.strip():
                     myprint()
                     continue
                 
@@ -376,12 +372,9 @@ class Interpreter:
         myprint()
 
 
-
-
 def repl(prog:ast.Program = None):
-    interp = Interpreter()
+    basic = Interpreter()
     if prog:
-        interp.ast = prog
+        basic.ast = prog
     
-    interp.repl("redbasic REPL v0.2", "> ")
-
+    basic.repl("redbasic REPL v0.2", "> ")

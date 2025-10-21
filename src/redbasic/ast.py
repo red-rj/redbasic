@@ -279,4 +279,5 @@ def reconstruct(program:Program):
         reconstruct_stmt(stmt, ss)
 
         ss.write('\n')
+    
     return ss.getvalue()
