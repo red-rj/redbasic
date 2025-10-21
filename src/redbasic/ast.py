@@ -133,10 +133,6 @@ class GotoStmt(Stmt):
 class GosubStmt(GotoStmt):
     pass
 
-# @dataclass
-# class LetStmt(Stmt):
-#     declarations:list[VariableDecl]
-
 @dataclass
 class ExpressionStmt(Stmt):
     expression:Expr

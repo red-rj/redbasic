@@ -27,6 +27,10 @@ def is_operator(tok:Token):
 def is_keyword(tok:Token):
     return tok.name.startswith('kw_')
 
+def check_assignment_target(e):
+    if isinstance(e, Identifier):
+        return e
+    raise TypeError()
 
 # TODO: find a way to do better tokenization
 # maybe with a mode variable?
@@ -34,14 +38,14 @@ def is_keyword(tok:Token):
 
 class Parser:
     def __init__(self):
-        self.stack = []
+        self.undostack = []
         self.lookahead:tuple[Token,str] = Token.eof, None
 
     def set_source(self, code:str):
         self.cursor = 0
         self.linenum = 1
         self.code = code
-        self.stack.clear()
+        self.undostack.clear()
         self.lookahead = self.next_token()
  
     def parse(self, textcode:str=None):
@@ -104,10 +108,15 @@ class Parser:
         while self.lookahead[0] == tok:
             self.eat()
 
-    # ----
+    # Top level
 
     def program(self):
-        return Program(self.line_list())
+        p = Program([])
+        while self.lookahead[0] != Token.eof:
+            self.skip(Token.eol)
+            p.body.append(self.line_stmt())
+            self.skip(Token.eol)
+        return p
     
     def line_stmt(self):
         token, _ = self.lookahead
@@ -136,15 +145,6 @@ class Parser:
 
         stmt = self.statement()
         return Line(stmt, linenum)
-
-    def line_list(self):
-        lines = []
-        while self.lookahead[0] != Token.eof:
-            self.skip(Token.eol)
-            lines.append(self.line_stmt())
-            self.skip(Token.eol)
-
-        return lines
             
     # STATEMENTS
 
@@ -332,12 +332,12 @@ class Parser:
         refrigirator = (Token.assignment, Token.assignment_complex)
         for food in refrigirator:
             try:
-                node = self.eat(food)
-                if not isinstance(left, Identifier):
-                    raise self._bad_syntax('Invalid left-hand side in assignment expression')
-                return AssignmentExpr(operator=node[1], left=left, right=self.assignment_expr())
+                _, op = self.eat(food)
+                return AssignmentExpr(operator=op, left=check_assignment_target(left), right=self.assignment_expr())
             except SyntaxError:
                 pass
+            except TypeError:
+                raise self._bad_syntax('Invalid left-hand side in assignment expression')
         
         raise self._bad_syntax(f"expected one of {refrigirator}, got {self.lookahead}")
 
@@ -472,12 +472,12 @@ class Parser:
 
 
     def push_undo(self):
-        return self.stack.append((self.lookahead, self.cursor, self.linenum))
+        return self.undostack.append((self.lookahead, self.cursor, self.linenum))
 
     def undo(self, n=1):
-        assert len(self.stack) >= n
+        assert len(self.undostack) >= n
         while n:
-            look,cursor,line = self.stack.pop()
+            look,cursor,line = self.undostack.pop()
             self.lookahead = look
             self.cursor = cursor
             self.linenum = line
