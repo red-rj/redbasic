@@ -39,10 +39,11 @@
         | return_stmt
         | if_stmt
         | comment
+        | end_stmt
         | clear_stmt
         | run_stmt
         | list_stmt
-        | end_stmt
+        | new_stmt
         ;
 
     print_stmt
@@ -52,7 +53,6 @@
 
     printlist
         : printitem
-        | printitem ':'
         | printitem print_sep printlist
         ;
 
@@ -102,7 +102,10 @@
 
     run_stmt
         : 'RUN'
-        | 'RUN' ',' exprlist
+        ;
+
+    new_stmt
+        : 'NEW'
         ;
     
     list_stmt
@@ -187,13 +190,16 @@
         | function
         ;
 
-    lhs
+    function 
+        : funcname '(' exprlist ')'
+        ;
+
+    funcname
         : identifier
         ;
 
-    function 
-        : 'RND' '(' expression ')'
-        | 'USR' '(' exprlist ')'
+    lhs
+        : identifier
         ;
 
     number
