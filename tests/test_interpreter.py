@@ -117,6 +117,12 @@ class ScriptTests(TestCase):
         tc.assertRegex(out, "start")
         tc.assertEqual(var["tmp"], 2)
 
+    def test_gosub(tc):
+        tc.execScript("gosub.bas")
+        out = tc.output.getvalue()
+        var = tc.interp.variables
+        tc.assertEqual(var["var"], 25)
+        tc.assertRegex(out, "start|end")
 
 if __name__=='__main__':
     unittest.main()

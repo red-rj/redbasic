@@ -16,6 +16,16 @@ def builtin_rnd(min:int, max:int=None):
 def builtin_usr(*args):
     raise NotImplementedError("USR func")
 
+def find_index_of(item, sequence, attr=None):
+    if attr:
+        item = getattr(item, attr, item)
+        sequence = ( getattr(o, attr) for o in sequence )
+
+    for i,v in enumerate(sequence):
+        if v == item:
+            return i
+    return -1
+
 
 
 class Interpreter:
@@ -75,8 +85,6 @@ class Interpreter:
                 self._print(stmt)
             case ast.GotoStmt():
                 self._goto(stmt)
-            case ast.GosubStmt():
-                self._gosub(stmt)
             case ast.EndStmt():
                 self.cursor = 2**31
             case ast.IfStmt():
@@ -182,23 +190,20 @@ class Interpreter:
         if dest == 0:
             raise Error("0 is not a valid linenum")
 
-        for i, l in enumerate(x.linenum for x in self.ast.body):
-            if dest == l:
-                return i
-
-        raise Error(f"Unexpected destination {dest!r}")
+        idx = find_index_of(dest, (x.linenum for x in self.ast.body))
+        if idx > -1:
+            return idx
+        else:
+            raise RuntimeError(f"Unexpected destination {dest}")
 
 
     def _goto(self, goto:ast.GotoStmt):
+        if isinstance(goto, ast.GosubStmt):
+            if len(self.substack) > 255:
+                raise RecursionError()
+            self.substack.append(self.cursor+1)
+        
         dest = self.eval(goto.destination)
-        self.cursor = self._calc_go(dest)
-
-    def _gosub(self, gosub:ast.GosubStmt):
-        if len(self.substack) > 255:
-            raise RecursionError()
-
-        dest = self.eval(gosub.destination)
-        self.substack.append(self.cursor)
         self.cursor = self._calc_go(dest)
 
     def _return(self):
@@ -352,15 +357,12 @@ class Interpreter:
                     # code statements
                     # lines that don't start with a linenum are executed
                     # lines that start with a linenum are added to the program
-                    ff = [ x for x in body if x.linenum == line.linenum ]
-                    if ff:
-                        i = body.index(ff[0])
-                        # replace line
-                        body[i] = line
-                    
-                    if line.linenum and not ff:
-                        # new line
-                        body.append(line)
+                    if line.linenum:
+                        idx = find_index_of(line, body, "linenum")
+                        if idx != -1:
+                            body[idx] = line
+                        else:
+                            body.append(line)
                     else:
                         self.exec_line(line)
         except EOFError:
