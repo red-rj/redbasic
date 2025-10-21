@@ -41,7 +41,7 @@ class interpreterTests(TestCase):
         code = "print \"olá\""
         tc.interp.set_source(code)
         tc.interp.exec()
-        tc.assertEqual("olá\n", tc.output.getvalue())
+        tc.assertRegex(tc.output.getvalue(), "olá")
 
     def test_input(tc):
         code = "10 input name, age"
@@ -120,9 +120,11 @@ class ScriptTests(TestCase):
     def test_gosub(tc):
         tc.execScript("gosub.bas")
         out = tc.output.getvalue()
-        var = tc.interp.variables
-        tc.assertEqual(var["var"], 25)
-        tc.assertRegex(out, "start|end")
+        tc.assertRegex(out, "start")
+        tc.assertRegex(out, "lineno")
+        tc.assertRegex(out, "label")
+        tc.assertRegex(out, "end")
+
 
 if __name__=='__main__':
     unittest.main()

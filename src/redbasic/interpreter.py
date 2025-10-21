@@ -26,7 +26,7 @@ def find_index_of(item, sequence, attr=None):
             return i
     return -1
 
-
+VAR_NOT_FOUND = object()
 
 class Interpreter:
     "Redbasic interpreter"
@@ -182,6 +182,16 @@ class Interpreter:
             self.output.write(string)
         self.output.write('\n')
 
+
+    def _eval_dest(self, destination):
+        try:
+            return self.eval(destination)
+        except error.UndefinedVar:
+            if isinstance(destination, ast.Identifier):
+                return VAR_NOT_FOUND
+            else:
+                raise
+
     def _calc_go(self, dest):
         "returns next cursor"
         if isinstance(dest, str):
@@ -196,14 +206,17 @@ class Interpreter:
         else:
             raise RuntimeError(f"Unexpected destination {dest}")
 
-
     def _goto(self, goto:ast.GotoStmt):
         if isinstance(goto, ast.GosubStmt):
             if len(self.substack) > 255:
                 raise RecursionError()
             self.substack.append(self.cursor+1)
         
-        dest = self.eval(goto.destination)
+        dest = self._eval_dest(goto.destination)
+        if dest is VAR_NOT_FOUND:
+            # try to find label
+            dest = goto.destination.name
+
         self.cursor = self._calc_go(dest)
 
     def _return(self):
@@ -318,8 +331,7 @@ class Interpreter:
     
     def getvar(self, name:str):
         try:
-            var = self.variables[name]
-            return var
+            return self.variables[name]
         except KeyError:
             raise error.UndefinedVar(name)
         

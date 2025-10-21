@@ -27,6 +27,9 @@ class Empty:
         if cls.__instance is None:
             cls.__instance = super().__new__(cls)
         return cls.__instance
+    
+    def __repr__(self):
+        return self.__class__.__name__ + "()"
 
 # --- expressions ---
 @dataclass
@@ -149,7 +152,7 @@ class ReturnStmt(Empty, Stmt):
 class ClearStmt(Empty, InteractiveStmt):
     pass
 
-class EndStmt(Empty, InteractiveStmt):
+class EndStmt(Empty, Stmt):
     pass
 
 @dataclass
@@ -161,7 +164,7 @@ class ListStmt(InteractiveStmt):
     arguments:list[Expr]
     mode:str
 
-class NewStmt(InteractiveStmt):
+class NewStmt(Empty, InteractiveStmt):
     pass
 
 # reconstruct util

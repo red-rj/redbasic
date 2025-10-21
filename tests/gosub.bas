@@ -1,11 +1,13 @@
-let var = 1
 goto 1
 
-
-999 var += arg
+L: 
+print "label"
 return
 
-1 let arg = 24
-print "start"
+999  print "lineno"
+1000 return
+
+1 print "start"
+gosub L
 gosub 999
 print "end"
