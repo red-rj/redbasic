@@ -1,3 +1,4 @@
 # stuff to ignore
 Referência
 *.pyc
+.vscode/*.json
