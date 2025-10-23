@@ -7,5 +7,5 @@ rem isso eh um comentário
 PRINT "random number: "; RND(100)
 50 goto 99
 mysub: 
-69 V=USR(1,2)
+69 V=SQRT(4)
 99 end
