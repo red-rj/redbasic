@@ -11,7 +11,7 @@ from redbasic.ast import *
 # --- PARSER TESTS ---
 parser = Parser()
 
-class parserTestCase(unittest.TestCase):
+class TestCase(unittest.TestCase):
     def __init__(self, method="runTest"):
         self.maxDiff = 9999 
         self.longMessage = False
@@ -38,7 +38,7 @@ class parserHelpers(unittest.TestCase):
         tc.assertFalse(is_keyword(Token.eol))
         tc.assertFalse(is_keyword(Token.semicolon))
 
-class mathTests(parserTestCase):
+class mathTests(TestCase):
     def test_addition(tc):
         tc.assertAst(
             "10  2 + 2",
@@ -146,7 +146,7 @@ class mathTests(parserTestCase):
         tc.assertAst("(((((Q)))))", Program([ Line(ExpressionStmt(Identifier('Q'))) ]))
 
         
-class assignmentTests(parserTestCase):
+class assignmentTests(TestCase):
     def test_simple_assignment(tc):
         tc.assertAst(
             'var = 42',
@@ -172,7 +172,7 @@ class assignmentTests(parserTestCase):
         )
 
 
-class unaryTests(parserTestCase):
+class unaryTests(TestCase):
     def test_unary_minus(tc):
         tc.assertAst("-x",
             Program(body=[Line(statement=ExpressionStmt(expression=UnaryExpr(operator='-',
@@ -207,7 +207,7 @@ class unaryTests(parserTestCase):
                    linenum=0)])
         )
     
-class comparisonTests(parserTestCase):
+class comparisonTests(TestCase):
     def test_greater_then(tc):
         tc.assertAst(
             'x > 0',
@@ -233,7 +233,7 @@ class comparisonTests(parserTestCase):
                    linenum=0)])
         )
 
-class logicalTests(parserTestCase):
+class logicalTests(TestCase):
     def test_and(tc):
         tc.assertAst(
             'x > 0 && y < 1',
@@ -260,7 +260,7 @@ class logicalTests(parserTestCase):
                    linenum=0)])
         )
 
-class statmentTests(parserTestCase):
+class statmentTests(TestCase):
     def test_let_stmt(tc):
         tc.assertAst('let x = 420', Program(body=[Line(statement=VariableDecl(iden=Identifier(name='x'),
                                         init=IntLiteral(value=420)), linenum=0)]))
@@ -330,7 +330,7 @@ class statmentTests(parserTestCase):
                    linenum=30)])
         )
     
-class labelTests(parserTestCase):
+class labelTests(TestCase):
     def test_label(tc):
         tc.assertAst(
             """
@@ -347,7 +347,7 @@ class labelTests(parserTestCase):
             Program(body=[Label(VariableDecl(Identifier('i'), IntLiteral(1)), 'name'), Line(PrintStmt([PrintItem(Identifier('i'), None)]), 99)])
         )
     
-class functionTests(parserTestCase):
+class functionTests(TestCase):
     def test_rnd(tc):
         tc.assertAst(
             '42  RND (1,10)',
@@ -392,6 +392,14 @@ class functionTests(parserTestCase):
             ])
         )
 
+class invalidTests(TestCase):
+    def test_reserved_keywords(tc):
+        with tc.assertRaises(SyntaxError):
+            parser.parse("10 rnd = 6")
+        with tc.assertRaises(SyntaxError):
+            parser.parse("10 let usr = 6")
+        with tc.assertRaises(SyntaxError):
+            parser.parse("10 pow = 6")
 
 if __name__=='__main__':
     unittest.main()

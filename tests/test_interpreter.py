@@ -125,6 +125,14 @@ class ScriptTests(TestCase):
         tc.assertRegex(out, "label")
         tc.assertRegex(out, "end")
 
+class invalidTests(TestCase):
+    def test_raise_on_unknown_ast(tc):       
+        with tc.assertRaises(NotImplementedError):
+            tc.interp.exec_statement(object())
+        
+        with tc.assertRaises(NotImplementedError):
+            tc.interp.eval(object())
+
 
 if __name__=='__main__':
     unittest.main()
