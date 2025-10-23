@@ -17,7 +17,7 @@
             "type": "debugpy",
             "request": "launch",
             "program": "-m src.redbasic",
-            "args": "-if Samples/appendix-e.bas",
+            "args": "-f Samples/rnumbers.bas",
             "console": "integratedTerminal",
             "justMyCode": true
         },

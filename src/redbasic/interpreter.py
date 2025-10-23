@@ -51,11 +51,14 @@ class Interpreter:
     def exec(self):
         maxcursor = len(self.ast.body)
         self.cursor = 0
+        self.nextcursor = None
 
         while self.cursor < maxcursor:
             item = self.ast.body[self.cursor]
             self.exec_statement(item.statement)
-            if isinstance(item.statement, (ast.GotoStmt, ast.ReturnStmt, ast.EndStmt)):
+            if self.nextcursor:
+                self.cursor = self.nextcursor
+                self.nextcursor = None
                 continue
             self.cursor += 1
 
@@ -94,7 +97,7 @@ class Interpreter:
             case ast.GotoStmt():
                 self._goto(stmt)
             case ast.EndStmt():
-                self.cursor = 2**31
+                self.nextcursor = 2**31
             case ast.IfStmt():
                 self._if(stmt)
             case ast.InputStmt():
@@ -109,6 +112,10 @@ class Interpreter:
                 self.exec()
             case ast.NewStmt():
                 self._new()
+            case None:
+                # numbered line w/o statement
+                # is this a BUG?
+                pass
             case _:
                 raise NotImplementedError(f"unsupported statement {stmt}")
         
@@ -223,10 +230,10 @@ class Interpreter:
             # try to find label
             dest = goto.destination.name
 
-        self.cursor = self._calc_go(dest)
+        self.nextcursor = self._calc_go(dest)
 
     def _return(self):
-        self.cursor = self.substack.pop()
+        self.nextcursor = self.substack.pop()
 
 
     def _if(self, stmt:ast.IfStmt):

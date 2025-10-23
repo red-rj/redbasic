@@ -29,7 +29,8 @@ def main():
         exit()
 
     interp = Interpreter()
-    interp.exec_program(Ast)
+    interp.ast = Ast
+    interp.exec()
 
     if args.dump:
         if 'ast' in args.dump:
