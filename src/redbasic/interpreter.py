@@ -42,7 +42,7 @@ class Interpreter:
         self.input = textin
         self.variables = {}
         self.substack = []
-        self.ast = ast.Program([])
+        self.ast:ast.Program = None
 
 
     def set_source(self, code:str):
@@ -184,13 +184,10 @@ class Interpreter:
 
 
     def _eval_dest(self, destination):
-        try:
+        if isinstance(destination, ast.Identifier):
+            return self.variables.get(destination.name, VAR_NOT_FOUND)
+        else:
             return self.eval(destination)
-        except error.UndefinedVar:
-            if isinstance(destination, ast.Identifier):
-                return VAR_NOT_FOUND
-            else:
-                raise
 
     def _calc_go(self, dest):
         "returns next cursor"
