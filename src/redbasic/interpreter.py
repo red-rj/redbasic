@@ -48,13 +48,7 @@ class Interpreter:
     def set_source(self, code:str):
         self.ast = self.parser.parse(code)
 
-    def exec_line(self, line:ast.Line|str):
-        if isinstance(line, str):
-            line = self.parser.parse_line(line)
-        self.exec_statement(line.statement)
-
-    def exec_program(self, prog:ast.Program):
-        self.ast = prog
+    def exec(self):
         maxcursor = len(self.ast.body)
         self.cursor = 0
 
@@ -65,8 +59,22 @@ class Interpreter:
                 continue
             self.cursor += 1
 
-    def exec(self):
-        self.exec_program(self.ast)
+    def exec_script(self, path):
+        with open(path) as s:
+            code = s.read()
+        self.set_source(code)
+        self.exec()
+
+    def exec_src(self, code):
+        self.set_source(code)
+        self.exec()
+
+    def exec_line(self, line:ast.Line|str):
+        if isinstance(line, str):
+            line = self.parser.parse_line(line)
+        self.exec_statement(line.statement)
+
+    # ---
 
     def exec_statement(self, stmt:ast.Stmt):
         match stmt:
@@ -124,6 +132,7 @@ class Interpreter:
             case _:        
                 raise NotImplementedError(f"unsupported expression {expr}")
 
+    # ---
 
     def _list(self, stmt:ast.ListStmt):
         args = self.eval(stmt.arguments) if stmt.arguments else None
@@ -326,6 +335,8 @@ class Interpreter:
         
         return arg
     
+    # ---
+
     def getvar(self, name:str):
         try:
             return self.variables[name]
