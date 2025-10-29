@@ -199,38 +199,34 @@ class Interpreter:
         self.output.write('\n')
 
 
-    def _eval_dest(self, destination):
-        if isinstance(destination, ast.Identifier):
-            return self.variables.get(destination.name, VAR_NOT_FOUND)
-        else:
-            return self.eval(destination)
-
-    def _calc_go(self, dest):
-        "returns next cursor"
-        if isinstance(dest, str):
-            dest = hash(dest)
-
-        if dest == 0:
-            raise Error("0 is not a valid linenum")
-
-        idx = find_index_of(dest, (x.linenum for x in self.ast.body))
-        if idx > -1:
-            return idx
-        else:
-            raise RuntimeError(f"Unexpected destination {dest}")
-
     def _goto(self, goto:ast.GotoStmt):
         if isinstance(goto, ast.GosubStmt):
             if len(self.substack) > 255:
                 raise RecursionError()
             self.substack.append(self.cursor+1)
         
-        dest = self._eval_dest(goto.destination)
+        # if its an identifier, its either a variable w/ line num
+        # or a label name
+        if isinstance(goto.destination, ast.Identifier):
+            dest = self.variables.get(goto.destination.name, VAR_NOT_FOUND)
+        else:
+            dest = self.eval(goto.destination)
+        
         if dest is VAR_NOT_FOUND:
-            # try to find label
             dest = goto.destination.name
 
-        self.nextcursor = self._calc_go(dest)
+        # calculate goto destination
+        if isinstance(dest, str):
+            dest = hash(dest)
+        if dest == 0:
+            raise Error("0 is not a valid destination")
+        
+        dest = find_index_of(dest, (x.linenum for x in self.ast.body))
+        if dest == -1:
+            raise RuntimeError(f"Unexpected destination {dest}")
+        
+        self.nextcursor = dest
+        
 
     def _return(self):
         self.nextcursor = self.substack.pop()
